@@ -3,3 +3,7 @@
 ################################################################################
 
 /RTRenderer/.vs/RTRenderer/v16
+/RTRenderer/RTRenderer.sln
+/RTRenderer/RTRenderer/RTRenderer.vcxproj
+/RTRenderer/RTRenderer/RTRenderer.vcxproj.filters
+/RTRenderer/RTRenderer/RTRenderer.vcxproj.user
