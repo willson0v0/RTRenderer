@@ -8,9 +8,10 @@ class Sphere: public Hittable
 public:
 	Vec3 center;
 	double radius;
+	Material* matPtr;
 
-	Sphere(double x, double y, double z, double r) :center(x, y, z), radius(r) {}
-	Sphere(Vec3 c, double r) :center(c), radius(r) {}
+	Sphere(double x, double y, double z, double r, Material* m) :center(x, y, z), radius(r), matPtr(m) {}
+	Sphere(Vec3 c, double r, Material* m) :center(c), radius(r), matPtr(m) {}
 
 	virtual bool hit(const Ray& r, double tMin, double tMax, hitRecord& rec) const;
 };
@@ -30,6 +31,7 @@ bool Sphere::hit(const Ray& r, double tMin, double tMax, hitRecord& rec) const
 			rec.t = t;
 			rec.point = r.pointAtParam(t);
 			rec.norm = (rec.point - center) / radius;
+			rec.matPtr = matPtr;
 			return true;
 		}
 		t = (-b + sqrt(diss)) / a;
@@ -38,6 +40,7 @@ bool Sphere::hit(const Ray& r, double tMin, double tMax, hitRecord& rec) const
 			rec.t = t;
 			rec.point = r.pointAtParam(t);
 			rec.norm = (rec.point - center) / radius;
+			rec.matPtr = matPtr;
 			return true;
 		}
 		return false;

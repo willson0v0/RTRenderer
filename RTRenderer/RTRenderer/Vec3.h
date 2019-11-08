@@ -38,7 +38,7 @@ public:
 	friend inline std::ostream& operator<<(std::ostream& os, Vec3& t);
 
 	inline double length() const;
-	inline double squared_length() const;
+	inline double squaredLength() const;
 	inline void makeUnitVector();
 	inline bool isZero() { return e[0] != 0 && e[1] != 0 && e[2] != 0; }
 };
@@ -46,9 +46,9 @@ public:
 inline cv::Vec3b Vec3::toCVPix() const
 {
 	return cv::Vec3b(
-		uchar(e[2] * 255.99),
-		uchar(e[1] * 255.99),
-		uchar(e[0] * 255.99));
+		uchar(sqrt(e[2]) * 255.99),
+		uchar(sqrt(e[1]) * 255.99),
+		uchar(sqrt(e[0]) * 255.99));
 }
 
 inline Vec3& Vec3::operator+=(const Vec3& v2)
@@ -149,10 +149,10 @@ inline Vec3 operator/(const Vec3& v, double t)
 
 inline double Vec3::length() const
 {
-	return sqrt(this->squared_length());
+	return sqrt(this->squaredLength());
 }
 
-inline double Vec3::squared_length() const
+inline double Vec3::squaredLength() const
 {
 	return e[0] * e[0] + e[1] * e[1] + e[2] * e[2];
 }
