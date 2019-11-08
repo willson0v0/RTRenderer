@@ -40,6 +40,7 @@ public:
 	inline double length() const;
 	inline double squared_length() const;
 	inline void makeUnitVector();
+	inline bool isZero() { return e[0] != 0 && e[1] != 0 && e[2] != 0; }
 };
 
 inline cv::Vec3b Vec3::toCVPix() const
