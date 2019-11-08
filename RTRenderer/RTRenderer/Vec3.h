@@ -20,13 +20,7 @@ public:
 	inline double g() const { return e[1]; }
 	inline double b() const { return e[2]; }
 
-	inline cv::Vec3b toCVPix() const
-	{
-		return cv::Vec3b(
-			uchar(e[2] * 255.99),
-			uchar(e[1] * 255.99),
-			uchar(e[0] * 255.99));
-	}
+	inline cv::Vec3b toCVPix() const;
 
 	inline const Vec3& operator+() const { return *this; }
 	inline Vec3	operator-() const { return Vec3(-e[0], -e[1], -e[2]); }
@@ -39,8 +33,6 @@ public:
 	inline Vec3& operator/=(const Vec3& v2);
 	inline Vec3& operator*=(const double t);
 	inline Vec3& operator/=(const double t);
-
-	inline double dot(const Vec3& v1, const Vec3& v2);
 
 	friend inline std::istream& operator>>(std::istream& is, Vec3& t);
 	friend inline std::ostream& operator<<(std::ostream& os, Vec3& t);
