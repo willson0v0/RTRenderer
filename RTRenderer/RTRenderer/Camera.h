@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Ray.h"
 #include <math.h>
 #include <stdlib.h>
+#include "Ray.h"
 
 class Camera
 {
@@ -19,7 +19,7 @@ public:
 	{
 		lensRadius = aperture / 2;
 		double aspect = double(x) / double(y);
-		double theta = vfov * 3.1415926535 / 180.0;
+		double theta = vfov * PI / 180.0;
 		double halfHeight = tan(theta / 2.00);
 		double halfWidth = aspect * halfHeight;
 

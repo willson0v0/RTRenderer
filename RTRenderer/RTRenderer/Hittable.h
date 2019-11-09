@@ -10,6 +10,8 @@ struct  hitRecord
 	Vec3 point;
 	Vec3 norm;
 	Material* matPtr;
+	double u;
+	double v;
 };
 
 class Hittable

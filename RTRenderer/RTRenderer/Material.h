@@ -1,27 +1,25 @@
 #pragma once
-
-#include "Hittable.h"
-#include "Ray.h"
+#include "Texture.h"
 #include "misc.h"
 
 class Material
 {
 public:
 	virtual bool scatter(const Ray& rIn, const hitRecord& rec, Vec3& attenuation, Ray& scattered) const = 0;
+	//virtual Vec3 emitted(double u, double v, const Vec3& p) const { return Vec3(0, 0, 0); }
 };
 
 class Lambertian : public Material
 {
 public:
-	Vec3 albedo;
+	Texture* albedo;
 
-	Lambertian(double r, double g, double b) : albedo(Vec3(r, g, b)) {}
-	Lambertian(const Vec3& a) : albedo(a) {}
+	Lambertian(Texture* a) : albedo(a) {}
 	virtual bool scatter(const Ray& rIn, const hitRecord& rec, Vec3& attenuation, Ray& scattered) const
 	{
 		Vec3 tgt = rec.norm + randomVecInUnitSphere();
 		scattered = Ray(rec.point, tgt);
-		attenuation = albedo;
+		attenuation = albedo->value(rec.u, rec.v, rec.point);
 		return true;
 	}
 };

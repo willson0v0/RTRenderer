@@ -101,25 +101,25 @@ inline Vec3& Vec3::operator/=(const double t)
 
 inline double dot(const Vec3& v1, const Vec3& v2)
 {
-	return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+	return v1.e[0] * v2.e[0] + v1.e[1] * v2.e[1] + v1.e[2] * v2.e[2];
 }
 
 inline Vec3 cross(const Vec3& v1, const Vec3& v2)
 {
 	return Vec3(
-		v1[1] * v2[2] - v1[2] * v2[1],
-		v1[2] * v2[0] - v1[0] * v2[2],
-		v1[0] * v2[1] - v1[1] * v2[0]);
+		v1.e[1] * v2.e[2] - v1.e[2] * v2.e[1],
+		v1.e[2] * v2.e[0] - v1.e[0] * v2.e[2],
+		v1.e[0] * v2.e[1] - v1.e[1] * v2.e[0]);
 }
 
 inline Vec3 operator+(const Vec3& v1, const Vec3& v2)
 {
-	return Vec3(v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]);
+	return Vec3(v1.e[0] + v2.e[0], v1.e[1] + v2.e[1], v1.e[2] + v2.e[2]);
 }
 
 inline Vec3 operator-(const Vec3& v1, const Vec3& v2)
 {
-	return Vec3(v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]);
+	return Vec3(v1.e[0] - v2.e[0], v1.e[1] - v2.e[1], v1.e[2] - v2.e[2]);
 }
 
 inline Vec3 operator*(const Vec3& v1, const Vec3& v2)
