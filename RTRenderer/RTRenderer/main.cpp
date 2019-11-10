@@ -11,7 +11,7 @@
 #include "misc.h"
 #include "worldGen.h"
 
-constexpr auto AA = 65535;
+constexpr auto AA = 128;
 
 constexpr auto x = 1024;
 constexpr auto y = 768;
