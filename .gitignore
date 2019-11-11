@@ -2,14 +2,4 @@
 # 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
 ################################################################################
 
-/RTRenderer/.vs/RTRenderer/v16
-/RTRenderer/RTRenderer.sln
-/RTRenderer/RTRenderer/RTRenderer.vcxproj
-/RTRenderer/RTRenderer/RTRenderer.vcxproj.filters
-/RTRenderer/RTRenderer/RTRenderer.vcxproj.user
-/RTRenderer/Debug
-/RTRenderer/RTRenderer/Debug/RTRenderer.tlog
-/RTRenderer/RTRenderer/Debug
-/RTRenderer/RTRenderer/x64/Debug/RTRenderer.tlog
-/RTRenderer/RTRenderer/x64/Debug
-/RTRenderer/x64/Debug
+/RTRendererCUDA/x64/Debug
