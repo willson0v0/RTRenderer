@@ -46,7 +46,7 @@ __device__ Vec3 randomVecInUnitSphere(curandState* localRandState)
 	Vec3 p;
 	do
 	{
-		p = 2 * Vec3(curand_uniform(localRandState), curand_uniform(localRandState), curand_uniform(localRandState));
+		p = 2 * Vec3(curand_uniform(localRandState), curand_uniform(localRandState), curand_uniform(localRandState)) - Vec3(1,1,1);
 	} while (p.squaredLength() >= 1);
 	return p;
 }

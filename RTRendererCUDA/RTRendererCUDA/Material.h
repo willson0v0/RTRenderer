@@ -8,6 +8,8 @@ class Material
 public:
 	__device__ virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered, curandState* localRandState) const = 0;
 	//virtual Vec3 emitted(double u, double v, const Vec3& p) const { return Vec3(0, 0, 0); }
+
+	__device__ virtual Vec3 emitted(double u, double v, const Vec3& point) const = 0;
 };
 
 class Lambertian : public Material
@@ -23,6 +25,11 @@ public:
 		attenuation = albedo->value(rec.u, rec.v, rec.point);
 		return true;
 	}
+
+	__device__ virtual Vec3 emitted(double u, double v, const Vec3& point) const
+	{
+		return Vec3(0, 0, 0);
+	}
 };
 
 class Metal : public Material
@@ -35,10 +42,15 @@ public:
 	__device__ Metal(const Vec3& a, double f) : albedo(a), fuzz(f) {}
 	__device__ virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered, curandState* localRandState) const
 	{
-		Vec3 reflected = reflect(unitVector(rIn.direction()), rec.norm);
+		Vec3 reflected = reflect(unitVector(rIn.direction), rec.norm);
 		scattered = Ray(rec.point, reflected + fuzz * randomVecInUnitSphere(localRandState));
 		attenuation = albedo;
-		return (dot(scattered.direction(), rec.norm) > 0);
+		return (dot(scattered.direction, rec.norm) > 0);
+	}
+
+	__device__ virtual Vec3 emitted(double u, double v, const Vec3& point) const
+	{
+		return Vec3(0, 0, 0);
 	}
 };
 
@@ -54,7 +66,7 @@ public:
 	__device__ virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered, curandState* localRandState) const
 	{
 		Vec3 oNorm;
-		Vec3 reflected = reflect(rIn.direction(), rec.norm);
+		Vec3 reflected = reflect(rIn.direction, rec.norm);
 		double rri;
 		attenuation = albedo;
 		Vec3 refracted;
@@ -62,20 +74,20 @@ public:
 		double reflectProb;
 		double cos;
 
-		if (dot(rIn.direction(), rec.norm) > 0) // Light went into glass
+		if (dot(rIn.direction, rec.norm) > 0) // Light went into glass
 		{
 			oNorm = -rec.norm;
 			rri = refIndex;
-			cos = refIndex * dot(rIn.direction(), rec.norm) / rIn.direction().length();
+			cos = refIndex * dot(rIn.direction, rec.norm) / rIn.direction.length();
 		}
 		else
 		{
 			oNorm = rec.norm;
 			rri = 1.0 / refIndex;
-			cos = -dot(rIn.direction(), rec.norm) / rIn.direction().length();
+			cos = -dot(rIn.direction, rec.norm) / rIn.direction.length();
 		}
 
-		if (refract(rIn.direction(), oNorm, rri, refracted))
+		if (refract(rIn.direction, oNorm, rri, refracted))
 		{
 			reflectProb = schlick(cos, refIndex);
 		}
@@ -93,5 +105,28 @@ public:
 			scattered = Ray(rec.point, refracted + fuzz * randomVecInUnitSphere(localRandState));
 		}
 		return true;
+	}
+
+	__device__ virtual Vec3 emitted(double u, double v, const Vec3& point) const
+	{
+		return Vec3(0, 0, 0);
+	}
+};
+
+class DiffuseLight : public Material
+{
+public:
+	Texture* emit;
+
+	__device__ DiffuseLight(Texture* a) : emit(a) {}
+
+	__device__ virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered, curandState* localRandState) const
+	{
+		return false;
+	}
+
+	__device__ virtual Vec3 emitted(double u, double v, const Vec3& point) const
+	{
+		return emit->value(u, v, point);
 	}
 };

@@ -5,22 +5,23 @@
 class Sphere : public Hittable
 {
 public:
+	Vec3 center;
+	double radius;
+	Material* matPtr;
+
 	__device__ Sphere() {}
 	__device__ Sphere(Vec3 center_, double radius_, Material *m):center(center_), radius(radius_), matPtr(m) {}
 
 	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const;
 
-	Vec3 center;
-	double radius;
-	Material* matPtr;
 };
 
 
 __device__ bool Sphere::hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
 {
-	Vec3 offset = r.A - center;
-	double a = dot(r.B, r.B);
-	double b = dot(offset, r.B);
+	Vec3 offset = r.origin - center;
+	double a = dot(r.direction, r.direction);
+	double b = dot(offset, r.direction);
 	double c = dot(offset, offset) - radius * radius;
 	double diss = b * b - a * c;
 

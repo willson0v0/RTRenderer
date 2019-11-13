@@ -20,29 +20,32 @@
 #define ALLOWOUTOFBOUND
 
 constexpr auto ITER = 50;
-constexpr auto SPP = 10;
+constexpr auto SPP = 5000;
 
-__device__ Vec3 color(const Ray& r, Hittable** world, curandState* localRandState)
+__device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState)
 {
 	Ray cur_ray = r;
 	Vec3 cur_attenuation = Vec3(1.0, 1.0, 1.0);
 	for (int i = 0; i < ITER; i++) {
 		HitRecord rec;
-		if ((*world)->hit(cur_ray, 0.0001, FLT_MAX, rec)) {
+		if ((*world)->hit(cur_ray, 0.001, FLT_MAX, rec)) {
 			Ray scattered;
 			Vec3 attenuation;
+			Vec3 emitted = rec.matPtr->emitted(rec.u, rec.v, rec.point);
 			if (rec.matPtr->scatter(cur_ray, rec, attenuation, scattered, localRandState)) {
 				cur_attenuation *= attenuation;
+				cur_attenuation += emitted;
 				cur_ray = scattered;
 			}
 			else {
-				return Vec3(0.0, 0.0, 0.0);
+				return cur_attenuation + emitted;
 			}
 		}
 		else {
-			Vec3 unit_direction = unitVector(cur_ray.direction());
-			double t = 0.5f * (unit_direction.e[1] + 1.0f);
-			Vec3 c = (1.0f - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
+			//Vec3 unit_direction = unitVector(cur_ray.direction);
+			//double t = 0.5f * (unit_direction.e[1] + 1.0f);
+			//Vec3 c = (1.0f - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
+			Vec3 c(0, 0, 0);
 			return cur_attenuation * c;
 		}
 	}
