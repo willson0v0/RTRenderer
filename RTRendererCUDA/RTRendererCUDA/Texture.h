@@ -1,6 +1,7 @@
 #pragma once
 #include "misc.h"
 #include "Vec3.h"
+#include "Perlin.h"
 
 class Texture
 {
@@ -38,6 +39,21 @@ public:
 			return odd->value(u, v, p);
 		else
 			return even->value(u, v, p);
+	}
+};
+
+class NoiseTexture : public Texture
+{
+public:
+	Perlin noise;
+	double scale;
+
+	__device__ NoiseTexture() :scale(1) {}
+	__device__ NoiseTexture(double sc) :scale(sc) {}
+	__device__ virtual Vec3 value(double u, double v, const Vec3& p) const
+	{
+		// return Vec3(1, 1, 1) * noise.turbulence(p * 4);
+		return Vec3(1, 1, 1) * 0.5 * (1 + sin(scale * p.e[2] + 10 * noise.turbulence(p)));
 	}
 };
 

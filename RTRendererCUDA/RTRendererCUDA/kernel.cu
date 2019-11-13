@@ -20,7 +20,7 @@
 #define ALLOWOUTOFBOUND
 
 constexpr auto ITER = 50;
-constexpr auto SPP = 1000;
+constexpr auto SPP = 10;
 
 __device__ Vec3 color(const Ray& r, Hittable** world, curandState* localRandState)
 {

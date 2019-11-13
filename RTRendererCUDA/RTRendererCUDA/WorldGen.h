@@ -28,6 +28,7 @@ __global__ void createWorld1(Hittable** list, Hittable** world, Camera** camera)
 __global__ void createRandScene(Hittable** list, Hittable** world, Camera** camera, unsigned char* texture, int tx, int ty, curandState* randState)
 {
 	curand_init(clock(), 0, 0, randState);
+	Perlin::initPerlin(randState);
 
 	int i = 0;
 	list[i++] = new Sphere(Vec3(0, -1000.0, -1), 1000, new Lambertian(
@@ -39,7 +40,8 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 	list[i++] = new Sphere(Vec3(4, 1, 0), 1.0, new Dielectric(Vec3(1, 1, 1), 1.5, 0));
 	list[i++] = new Sphere(Vec3(4, 1, 0), -0.75, new Dielectric(Vec3(1, 1, 1), 1.5, 0));
 	list[i++] = new Sphere(Vec3(4, 1, 0), 0.5, new Lambertian(new ImageTexture(texture, tx, ty)));
-	list[i++] = new Sphere(Vec3(-4, 1, 0), 1.0, new Lambertian(new ConstantTexture(Vec3(0.4, 0.2, 0.1))));
+//	list[i++] = new Sphere(Vec3(-4, 1, 0), 1.0, new Lambertian(new ConstantTexture(Vec3(0.4, 0.2, 0.1))));
+	list[i++] = new Sphere(Vec3(-4, 1, 0), 1.0, new Lambertian(new NoiseTexture(4)));
 	list[i++] = new Sphere(Vec3(0, 1, 0), 1.0, new Metal(Vec3(0.7, 0.6, 0.5), 0.0));
 	
 	for (int a = -11; a < 11; a++) {
