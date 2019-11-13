@@ -7,7 +7,12 @@ class Vec3
 public:
 	double e[3];
 
-	__host__ __device__ Vec3() {}
+	__host__ __device__ Vec3() 
+	{
+		e[0] = 0;
+		e[1] = 0;
+		e[2] = 0;
+	}
 
 	__host__ __device__ Vec3(double e0, double e1, double e2) 
 	{

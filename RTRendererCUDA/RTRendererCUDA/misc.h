@@ -8,6 +8,7 @@
 #include <functional>
 #include <random>
 #include "Vec3.h"
+#include <opencv/cv.hpp>
 
 //											func_name		  line no
 //												v				 v

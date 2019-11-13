@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Hittable.h"
+#include "Texture.h"
 
 class Material
 {
@@ -12,14 +13,14 @@ public:
 class Lambertian : public Material
 {
 public:
-	Vec3 albedo;
+	Texture* albedo;
 
-	__device__ Lambertian(Vec3 a) : albedo(a) {}
+	__device__ Lambertian(Texture* a) : albedo(a) {}
 	__device__ virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered, curandState* localRandState) const
 	{
 		Vec3 tgt = rec.norm + randomVecInUnitSphere(localRandState);
 		scattered = Ray(rec.point, tgt);
-		attenuation = albedo;
+		attenuation = albedo->value(rec.u, rec.v, rec.point);
 		return true;
 	}
 };
@@ -49,7 +50,6 @@ public:
 	Vec3 albedo;
 
 	__device__ Dielectric(Vec3 al, double ri, double f) : refIndex(ri), albedo(al), fuzz(f > 1 ? 1 : f) {}
-	__device__ Dielectric(double r, double g, double b, double ri, double f) : refIndex(ri), albedo(Vec3(r, g, b)), fuzz(f > 1 ? 1 : f) {}
 
 	__device__ virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered, curandState* localRandState) const
 	{

@@ -19,7 +19,7 @@
 #include "WorldGen.h"
 #define ALLOWOUTOFBOUND
 
-constexpr auto ITER = 15;
+constexpr auto ITER = 50;
 constexpr auto SPP = 1000;
 
 __device__ Vec3 color(const Ray& r, Hittable** world, curandState* localRandState)
@@ -100,8 +100,6 @@ int main()
 	std::cout << "Warning: Compiled in debug mode and it hurt performance.\n";
 #endif // DEBUG
 
-
-
 	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
 
 	size_t frameBufferSize = 3 * MAX_X * MAX_Y * sizeof(double);
@@ -122,7 +120,12 @@ int main()
 	curandState* worldGenRandState;
 	checkCudaErrors(cudaMalloc((void**)&worldGenRandState, sizeof(curandState)));
 
-	createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	cv::Mat em = cv::imread("earthmap.jpg");
+	unsigned char* t;
+	checkCudaErrors(cudaMalloc((void**)&t, sizeof(unsigned char) * em.rows * em.cols * 3));
+	checkCudaErrors(cudaMemcpy(t, em.data, sizeof(unsigned char) * em.rows * em.cols * 3, cudaMemcpyHostToDevice));
+
+	createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState);
 	//createWorld1 <<<1, 1 >>> (cudaList, cudaWorld, cudaCam);
 
 	checkCudaErrors(cudaGetLastError());
