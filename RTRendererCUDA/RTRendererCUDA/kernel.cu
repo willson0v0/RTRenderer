@@ -2,120 +2,167 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-#include <stdio.h>
+#include <iostream>
+#include <opencv/cv.hpp>
+#include <opencv2/photo/cuda.hpp>
+#include "cudaExamp.h"
+#include "misc.h"
+#include "Vec3.h"
+#include <time.h>
 
-cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
+#include "Ray.h"
+#include "Sphere.h"
+#include "Hittable.h"
+#include "HittableList.h"
+#include "Material.h"
+#include "Camera.h"
+#include "WorldGen.h"
+#define ALLOWOUTOFBOUND
 
-__global__ void addKernel(int *c, const int *a, const int *b)
+constexpr auto ITER = 15;
+constexpr auto SPP = 1000;
+
+__device__ Vec3 color(const Ray& r, Hittable** world, curandState* localRandState)
 {
-    int i = threadIdx.x;
-    c[i] = a[i] + b[i];
+	Ray cur_ray = r;
+	Vec3 cur_attenuation = Vec3(1.0, 1.0, 1.0);
+	for (int i = 0; i < ITER; i++) {
+		HitRecord rec;
+		if ((*world)->hit(cur_ray, 0.0001, FLT_MAX, rec)) {
+			Ray scattered;
+			Vec3 attenuation;
+			if (rec.matPtr->scatter(cur_ray, rec, attenuation, scattered, localRandState)) {
+				cur_attenuation *= attenuation;
+				cur_ray = scattered;
+			}
+			else {
+				return Vec3(0.0, 0.0, 0.0);
+			}
+		}
+		else {
+			Vec3 unit_direction = unitVector(cur_ray.direction());
+			double t = 0.5f * (unit_direction.e[1] + 1.0f);
+			Vec3 c = (1.0f - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
+			return cur_attenuation * c;
+		}
+	}
+	return Vec3(0.0, 0.0, 0.0); // exceeded recursion
+}
+
+// Main rander func.
+__global__ void render(double* fBuffer, Camera** cam, Hittable** world, curandState* randState)  //->: x, v: y, {b, g, r}
+{
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
+	int j = threadIdx.y + blockIdx.y * blockDim.y;
+
+#ifdef ALLOWOUTOFBOUND
+	if ((i >= MAX_X) || (j >= MAX_Y)) return;
+#endif // OUTOFBOUNDDETECT
+
+	int index = j * MAX_X + i;
+	curandState localRandState = randState[index];
+	Vec3 pixel(0, 0, 0);
+	for (int s = 0; s < SPP; s++) {
+		double u = double(i + curand_uniform(&localRandState)) / double(MAX_X);
+		double v = double(j + curand_uniform(&localRandState)) / double(MAX_Y);
+		Ray r = (*cam)->getRay(u, v, &localRandState);
+		pixel += color(r, world, &localRandState);
+	}
+	randState[index] = localRandState;
+	pixel /= double(SPP);
+	pixel.e[0] = sqrt(pixel.e[0]);
+	pixel.e[1] = sqrt(pixel.e[1]);
+	pixel.e[2] = sqrt(pixel.e[2]);
+
+	pixel.writeFrameBuffer(i, j, fBuffer);
+}
+
+__global__ void rander_init(curandState* randState)
+{
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
+	int j = threadIdx.y + blockIdx.y * blockDim.y;
+	if ((i >= MAX_X) || (j >= MAX_Y)) return;
+	int pixel_index = j * MAX_X + i;
+	//Each thread gets same seed, a different sequence number, no offset
+	curand_init(2019, pixel_index, 0, &randState[pixel_index]);
 }
 
 int main()
 {
-    const int arraySize = 5;
-    const int a[arraySize] = { 1, 2, 3, 4, 5 };
-    const int b[arraySize] = { 10, 20, 30, 40, 50 };
-    int c[arraySize] = { 0 };
+	clock_t clk;
+	clk = clock();
+	double renderTime;
 
-    // Add vectors in parallel.
-    cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "addWithCuda failed!");
-        return 1;
-    }
+	std::cout << "Rendering a " << MAX_X << "x" << MAX_Y << " image ";
+	std::cout << "in " << BLK_X << "x" << BLK_Y << " blocks, SPP = " <<SPP<<" & depth = "<<ITER<<"\n";
 
-    printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d}\n",
-        c[0], c[1], c[2], c[3], c[4]);
+#ifdef _DEBUG
+	std::cout << "Warning: Compiled in debug mode and it hurt performance.\n";
+#endif // DEBUG
 
-    // cudaDeviceReset must be called before exiting in order for profiling and
-    // tracing tools such as Nsight and Visual Profiler to show complete traces.
-    cudaStatus = cudaDeviceReset();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceReset failed!");
-        return 1;
-    }
+
+
+	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
+
+	size_t frameBufferSize = 3 * MAX_X * MAX_Y * sizeof(double);
+	double* frameBuffer;
+	checkCudaErrors(cudaMallocManaged((void**)&frameBuffer, frameBufferSize));
+
+	Hittable** cudaList;
+	int num_Hittables = 500;
+	checkCudaErrors(cudaMalloc((void**)&cudaList, num_Hittables * sizeof(Hittable*)));
+	Hittable** cudaWorld;
+	checkCudaErrors(cudaMalloc((void**)&cudaWorld, sizeof(Hittable*)));
+	Camera** cudaCam;
+	checkCudaErrors(cudaMalloc((void**)&cudaCam, sizeof(Camera*)));
+
+	double ms = double(clock() - clk);
+	std::cout << "Alloc \t\t@ t+ " << ms << " ms.\r\n";
+
+	curandState* worldGenRandState;
+	checkCudaErrors(cudaMalloc((void**)&worldGenRandState, sizeof(curandState)));
+
+	createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	//createWorld1 <<<1, 1 >>> (cudaList, cudaWorld, cudaCam);
+
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaDeviceSynchronize());
+
+	ms = double(clock() - clk);
+	std::cout << "WorldGen \t@ t+ " << ms << " ms.\r\n";
+
+	dim3 blocks(MAX_X / BLK_X + 1, MAX_Y / BLK_Y + 1);
+	dim3 threads(BLK_X, BLK_Y);
+
+	curandState* renderRandomStates;
+	checkCudaErrors(cudaMalloc((void**)&renderRandomStates, MAX_X * MAX_Y * sizeof(curandState)));
+	rander_init <<<blocks, threads >>> (renderRandomStates);
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaDeviceSynchronize());
+
+	ms = double(clock() - clk);
+	std::cout << "init rander \t@ t+ " << ms << " ms.\r\n";
+	renderTime = ms;
+
+	render <<<blocks, threads >>> (frameBuffer, cudaCam, cudaWorld, renderRandomStates);
+
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaDeviceSynchronize());
+
+	ms = double(clock() - clk);
+	std::cout << "Render \t\t@ t+ " << ms << " ms.\r\n";
+	renderTime = ms - renderTime;
+
+	M.data = (uchar*)frameBuffer;
+	cv::imshow("wow", M);
+
+	ms = double(clock() - clk);
+	std::cout << "Exec time:\t" << ms << " ms.\r\nRender Time:\t" << renderTime << "ms\r\nExpected FPS:\t" << 1000.00 / renderTime;
+
+	cv::waitKey();
+
+	cudaDeviceReset();
 
     return 0;
 }
 
-// Helper function for using CUDA to add vectors in parallel.
-cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
-{
-    int *dev_a = 0;
-    int *dev_b = 0;
-    int *dev_c = 0;
-    cudaError_t cudaStatus;
-
-    // Choose which GPU to run on, change this on a multi-GPU system.
-    cudaStatus = cudaSetDevice(0);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
-        goto Error;
-    }
-
-    // Allocate GPU buffers for three vectors (two input, one output)    .
-    cudaStatus = cudaMalloc((void**)&dev_c, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMalloc((void**)&dev_a, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMalloc((void**)&dev_b, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    // Copy input vectors from host memory to GPU buffers.
-    cudaStatus = cudaMemcpy(dev_a, a, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMemcpy(dev_b, b, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-    // Launch a kernel on the GPU with one thread for each element.
-    addKernel<<<1, size>>>(dev_c, dev_a, dev_b);
-
-    // Check for any errors launching the kernel
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-        goto Error;
-    }
-    
-    // cudaDeviceSynchronize waits for the kernel to finish, and returns
-    // any errors encountered during the launch.
-    cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-        goto Error;
-    }
-
-    // Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(c, dev_c, size * sizeof(int), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-Error:
-    cudaFree(dev_c);
-    cudaFree(dev_a);
-    cudaFree(dev_b);
-    
-    return cudaStatus;
-}
