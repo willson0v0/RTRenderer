@@ -23,8 +23,10 @@
 
 #define ALLOWOUTOFBOUND
 
+#define DARKSCENE
+
 constexpr auto ITER = 50;
-constexpr auto SPP = 50;
+constexpr auto SPP = 4;
 
 __global__ void cuHelloWorld()
 {
@@ -56,11 +58,13 @@ __device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState
 			}
 		}
 		else {
-			//Vec3 unit_direction = unitVector(cur_ray.direction);
-			//double t = 0.5f * (unit_direction.e[1] + 1.0f);
-			//Vec3 c = (1.0f - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
+#ifdef DARKSCENE
 			Vec3 c(0, 0, 0);
-
+#else
+			Vec3 unit_direction = unitVector(cur_ray.direction);
+			double t = 0.5f * (unit_direction.e[1] + 1.0f);
+			Vec3 c = (1.0f - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
+#endif
 			return cur_attenuation * c;
 		}
 	}
@@ -68,7 +72,7 @@ __device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState
 }
 
 // Main rander func.
-__global__ void render(double* fBuffer, Camera** cam, Hittable** world, curandState* randState)  //{b, g, r}, stupid opencv
+__global__ void render(int frameCount, double* fBuffer, Camera** cam, Hittable** world, curandState* randState)  //{b, g, r}, stupid opencv
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 	int j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -80,6 +84,13 @@ __global__ void render(double* fBuffer, Camera** cam, Hittable** world, curandSt
 	int index = j * MAX_X + i;
 	curandState localRandState = randState[index];
 	Vec3 pixel(0, 0, 0);
+	if (frameCount)
+	{
+		pixel.readFrameBuffer(i, j, fBuffer);
+		pixel = pixel * pixel;
+		pixel *= frameCount;
+		pixel *= SPP;
+	}
 	for (int s = 0; s < SPP; s++) {
 		double u = double(i + curand_uniform(&localRandState)) / double(MAX_X);
 		double v = double(j + curand_uniform(&localRandState)) / double(MAX_Y);
@@ -88,6 +99,7 @@ __global__ void render(double* fBuffer, Camera** cam, Hittable** world, curandSt
 	}
 	randState[index] = localRandState;
 	pixel /= double(SPP);
+	pixel /= frameCount + 1;
 	pixel.e[0] = sqrt(pixel.e[0]);
 	pixel.e[1] = sqrt(pixel.e[1]);
 	pixel.e[2] = sqrt(pixel.e[2]);
@@ -162,24 +174,31 @@ int main(int argc, char* argv[])
 
 	ms = double(clock() - clk);
 	std::cout << "init rander \t@ t+ " << ms << " ms.\r\n";
-	renderTime = ms;
 
-	render <<<blocks, threads >>> (frameBuffer, cudaCam, cudaWorld, renderRandomStates);
+	int frameCount = 0;
 
-	checkCudaErrors(cudaGetLastError());
-	checkCudaErrors(cudaDeviceSynchronize());
+	while (1)
+	{
+		renderTime = ms;
 
-	ms = double(clock() - clk);
-	std::cout << "Render \t\t@ t+ " << ms << " ms.\r\n";
-	renderTime = ms - renderTime;
+		render <<<blocks, threads >>> (frameCount++, frameBuffer, cudaCam, cudaWorld, renderRandomStates);
 
-	M.data = (uchar*)frameBuffer;
-	cv::imshow("wow", M);
+		checkCudaErrors(cudaGetLastError());
+		checkCudaErrors(cudaDeviceSynchronize());
+
+		ms = double(clock() - clk);
+		renderTime = ms - renderTime;
+		std::cout << "Render Time: " << renderTime/1000.0 << "\t/" << ms/1000.0 << "\ts, current SPP = " << frameCount * SPP << "\r\n";
+
+		M.data = (uchar*)frameBuffer;
+		cv::imshow("wow", M);
+		if (cv::waitKey(1) == 27) break;
+	}
+
 
 	ms = double(clock() - clk);
 	std::cout << "Exec time:\t" << ms << " ms.\r\nRender Time:\t" << renderTime << "ms\r\nExpected FPS:\t" << 1000.00 / renderTime;
 
-	cv::waitKey();
 
 	cudaDeviceReset();
 

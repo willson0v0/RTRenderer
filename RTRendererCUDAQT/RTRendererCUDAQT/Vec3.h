@@ -36,6 +36,7 @@ public:
 	__host__ __device__ inline void makeUnitVector();
 
 	__host__ __device__ inline void Vec3::writeFrameBuffer(int i, int j, double* fBuffer);
+	__host__ __device__ inline void Vec3::readFrameBuffer(int i, int j, double* fBuffer);
 };
 
 inline std::istream& operator>>(std::istream& is, Vec3& t)
@@ -195,4 +196,13 @@ __host__ __device__ inline void Vec3::writeFrameBuffer(int i, int j, double* fBu
 	fBuffer[index] = e[2];
 	fBuffer[index + 1] = e[1];
 	fBuffer[index + 2] = e[0];
+}
+
+__host__ __device__ inline void Vec3::readFrameBuffer(int i, int j, double* fBuffer)
+{
+	int index = (MAX_Y - j - 1) * MAX_X * 3 + i * 3; // Find location in frame buffer.
+
+	e[2] = fBuffer[index];
+	e[1] = fBuffer[index+1];
+	e[0] = fBuffer[index+2];
 }
