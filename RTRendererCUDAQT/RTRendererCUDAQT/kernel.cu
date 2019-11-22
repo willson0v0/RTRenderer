@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
 
 #ifdef _DEBUG
 	std::cout << "Warning: Compiled in debug mode and it hurt performance.\n";
-#endif // DEBUG
+#endif
 
 	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
 
