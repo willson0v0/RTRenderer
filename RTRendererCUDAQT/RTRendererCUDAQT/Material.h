@@ -133,3 +133,23 @@ public:
 		return emit->value(u, v, point);
 	}
 };
+
+class Isotropic : public Material
+{
+public:
+	Texture* albedo;
+
+	__device__ Isotropic(Texture* a) :albedo(a) {}
+
+	__device__ virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered, curandState* localRandState) const
+	{
+		scattered = Ray(rec.point, randomVecInUnitSphere(localRandState));
+		attenuation = albedo->value(rec.u, rec.v, rec.point);
+		return true;
+	}
+
+	__device__ virtual Vec3 emitted(double u, double v, const Vec3& point) const
+	{
+		return Vec3(0, 0, 0);
+	}
+};

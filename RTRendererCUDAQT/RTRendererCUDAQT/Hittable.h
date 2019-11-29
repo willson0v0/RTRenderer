@@ -19,6 +19,6 @@ struct HitRecord
 class Hittable
 {
 public:
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const = 0;
+	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const = 0;
 	__device__ virtual bool boundingBox(AABB& box) const = 0;
 };

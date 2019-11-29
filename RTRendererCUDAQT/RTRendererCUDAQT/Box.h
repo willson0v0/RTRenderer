@@ -13,7 +13,7 @@ public:
 	__device__ Box() {}
 	__device__ Box(const Vec3& p0, const Vec3& p1, Material* ptr);
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const;
+	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const;
 	__device__ virtual bool boundingBox(AABB& box) const;
 };
 
@@ -36,9 +36,9 @@ __device__ Box::Box(const Vec3& p0, const Vec3& p1, Material* ptr)
 	surfaces = new HittableList(list, 6);
 }
 
-__device__ bool Box::hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
+__device__ bool Box::hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
 {
-	return surfaces->hit(r, tMin, tMax, rec);
+	return surfaces->hit(r, tMin, tMax, rec, localRandState);
 }
 
 __device__ bool Box::boundingBox(AABB& box) const

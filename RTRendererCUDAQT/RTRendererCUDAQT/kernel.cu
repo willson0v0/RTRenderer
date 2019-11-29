@@ -38,7 +38,7 @@ extern "C" void launchKernal()
 __device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* localRandState)
 {
 	HitRecord rec;
-	if ((*world)->hit(r, 0.001, FLT_MAX, rec)) {
+	if ((*world)->hit(r, 0.000001, FLT_MAX, rec, localRandState)) {
 		Ray scattered;
 		Vec3 attenuation;
 		Vec3 emitted = rec.matPtr->emitted(rec.u, rec.v, rec.point);
@@ -67,7 +67,7 @@ __device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState
 	Vec3 cur_attenuation = Vec3(1.0, 1.0, 1.0);
 	for (int i = 0; i < ITER; i++) {
 		HitRecord rec;
-		if ((*world)->hit(cur_ray, 0.001, FLT_MAX, rec)) {
+		if ((*world)->hit(cur_ray, 0.001, FLT_MAX, rec, localRandState)) {
 			Ray scattered;
 			Vec3 attenuation;
 			Vec3 emitted = rec.matPtr->emitted(rec.u, rec.v, rec.point);
@@ -199,7 +199,8 @@ int main(int argc, char* argv[])
 	// createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState);
 	// createWorld1 <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 	// createCheckerTest <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
-	createCornellBox <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	// createCornellBox << <1, 1 >> > (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	createCornellSmoke << <1, 1 >> > (cudaList, cudaWorld, cudaCam, worldGenRandState);
 
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());

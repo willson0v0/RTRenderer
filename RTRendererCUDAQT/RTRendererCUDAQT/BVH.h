@@ -19,17 +19,17 @@ public:
 	__device__ BVH() {}
 	__device__ BVH(Hittable** l, int n, curandState* localRandstate);
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const;
+	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const;
 	__device__ virtual bool boundingBox(AABB& box) const;
 };
 
-__device__ bool BVH::hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
+__device__ bool BVH::hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
 {
 	if (box.hit(r, tMin, tMax))
 	{
 		HitRecord lRec, rRec;
-		bool lHit = left->hit(r, tMin, tMax, lRec);
-		bool rHit = right->hit(r, tMin, tMax, rRec);
+		bool lHit = left->hit(r, tMin, tMax, lRec, localRandState);
+		bool rHit = right->hit(r, tMin, tMax, rRec, localRandState);
 		if (lHit && rHit)
 		{
 			rec = (lRec.t < rRec.t ? lRec : rRec);

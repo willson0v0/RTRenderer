@@ -12,12 +12,12 @@ public:
 	__device__ Sphere() {}
 	__device__ Sphere(Vec3 center_, double radius_, Material *m):center(center_), radius(radius_), matPtr(m) {}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const;
+	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const;
 	__device__ virtual bool boundingBox(AABB& box) const;
 
 };
 
-__device__ bool Sphere::hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
+__device__ bool Sphere::hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
 {
 	Vec3 offset = r.origin - center;
 	double a = dot(r.direction, r.direction);

@@ -8,9 +8,9 @@ public:
 	Hittable* content;
 	__device__ FlipNorm(Hittable* p) :content(p) {}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
+	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
 	{
-		if (content->hit(r, tMin, tMax, rec))
+		if (content->hit(r, tMin, tMax, rec, localRandState))
 		{
 			rec.normal = -rec.normal;
 			return true;
@@ -39,7 +39,7 @@ public:
 	__device__ RectXY(double x0_, double x1_, double y0_, double y1_, double z_, Material* matPtr_)
 		: x0(x0_), x1(x1_), y0(y0_), y1(y1_), z(z_), xL(x1 - x0), yL(y1 - y0), matPtr(matPtr_) {}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
+	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
 	{
 		//				r.origin.z  r.dir.z
 		double t = (z - r.origin.e[2]) / r.direction.e[2];
@@ -76,7 +76,7 @@ public:
 	__device__ RectXZ(double x0_, double x1_, double z0_, double z1_, double y_, Material* matPtr_)
 		: x0(x0_), x1(x1_), z0(z0_), z1(z1_), y(y_), xL(x1 - x0), zL(z1 - z0), matPtr(matPtr_) {}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
+	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
 	{
 		//				r.origin.y			r.dir.y
 		double t = (y - r.origin.e[1]) / r.direction.e[1];
@@ -112,7 +112,7 @@ public:
 	__device__ RectYZ(double y0_, double y1_, double z0_, double z1_, double x_, Material* matPtr_)
 		: y0(y0_), y1(y1_), z0(z0_), z1(z1_), x(x_), yL(y1 - y0), zL(z1 - z0), matPtr(matPtr_) {}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
+	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
 	{
 		//				r.origin.x			r.dir.x
 		double t = (x - r.origin.e[0]) / r.direction.e[0];

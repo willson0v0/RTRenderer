@@ -10,10 +10,10 @@ public:
 
 	__device__ Translate(Hittable* p, const Vec3& ofst) : origin(p), offset(ofst) {}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
+	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
 	{
 		Ray moved(r.origin - offset, r.direction);
-		if (origin->hit(moved, tMin, tMax, rec))
+		if (origin->hit(moved, tMin, tMax, rec, localRandState))
 		{
 			rec.point += offset;
 			return true;
@@ -95,7 +95,7 @@ public:
 		bBox = AABB(Vec3(xMin, yMin, zMin), Vec3(xMax, yMax, zMax));
 	}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const
+	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
 	{
 		Ray rotated(
 			Vec3(
@@ -109,7 +109,7 @@ public:
 			)
 		);
 
-		if (origin->hit(rotated, tMin, tMax, rec))
+		if (origin->hit(rotated, tMin, tMax, rec, localRandState))
 		{
 			Vec3 p(
 				cosTheta * rec.point.e[0] + sinTheta * rec.point.e[2],

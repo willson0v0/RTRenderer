@@ -7,6 +7,7 @@
 #include "Rectangles.h"
 #include "Box.h"
 #include "Translation.h"
+#include "Volumes.h"
 #include "HittableList.h"
 #include "BVH.h"
 
@@ -146,6 +147,54 @@ __global__ void createCornellBox(Hittable** list, Hittable** world, Camera** cam
 
 	list[7] = new RotateY(list[7], 15);
 	list[7] = new Translate(list[7], Vec3(265, 0, 295));
+
+
+#ifdef USE_BVH
+	* world = new BVH(list, i, randState);
+#else
+	* world = new HittableList(list, i);
+#endif
+
+	Vec3 lookfrom(278, 278, -800);
+	Vec3 lookat(278, 278, 0);
+	double focusDist = (lookfrom - lookat).length();
+	double aperture = 0;
+	*camera = new Camera(MAX_X, MAX_Y, 40, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
+}
+
+
+__global__ void createCornellSmoke(Hittable** list, Hittable** world, Camera** camera, curandState* randState)
+{
+	curand_init(clock(), 0, 0, randState);
+	int i = 0;
+
+	list[i++] = new RectYZ(000, 555, 000, 555, 555, new Lambertian(new ConstantTexture(0.12, 0.45, 0.15)));
+	list[i++] = new RectYZ(000, 555, 000, 555, 000, new Lambertian(new ConstantTexture(0.65, 0.05, 0.05)));
+	list[i++] = new RectXZ(113, 443, 127, 432, 554, new DiffuseLight(new ConstantTexture(7, 7, 7)));
+	list[i++] = new RectXZ(000, 555, 000, 555, 555, new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
+	list[i++] = new RectXZ(000, 555, 000, 555, 000, new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
+	list[i++] = new RectXY(000, 555, 000, 555, 555, new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
+
+	list[i++] = new Box(Vec3(0, 0, 0), Vec3(165, 165, 165), new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
+	list[i++] = new Box(Vec3(0, 0, 0), Vec3(165, 330, 165), new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
+
+	list[i++] = new Sphere(Vec3(185, 278, 278), 70, new Dielectric(Vec3(1, 1, 1), 1.5, 0));
+	list[i++] = new Sphere(Vec3(370, 278, 278), 70, new Dielectric(Vec3(1, 1, 1), 1.5, 0));
+
+	list[i++] = new ConstantMedium(list[8], 0.2, new ConstantTexture(Vec3(0.2, 0.4, 0.9)));
+	list[i++] = new ConstantMedium(list[9], 0.0001, new ConstantTexture(Vec3(1, 1, 1)));
+
+	list[0] = new FlipNorm(list[0]);
+	list[3] = new FlipNorm(list[3]);
+	list[5] = new FlipNorm(list[5]);
+
+	list[6] = new RotateY(list[6], -18);
+	list[6] = new Translate(list[6], Vec3(130, 0, 65));
+	list[6] = new ConstantMedium(list[6], 0.01, new ConstantTexture(Vec3(1, 1, 1)));
+
+	list[7] = new RotateY(list[7], 15);
+	list[7] = new Translate(list[7], Vec3(265, 0, 295));
+	list[7] = new ConstantMedium(list[7], 0.01, new ConstantTexture(Vec3(0, 0, 0)));
 
 
 #ifdef USE_BVH
