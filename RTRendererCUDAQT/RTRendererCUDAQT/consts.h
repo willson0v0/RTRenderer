@@ -1,8 +1,9 @@
 #pragma once
 
 #define ALLOWOUTOFBOUND
-//#define DARKSCENE
-#define USE_BVH
+#define ALLOWOVERFLOW
+#define DARKSCENE
+//#define USE_BVH
 
 constexpr auto MAX_X = 1024;
 constexpr auto MAX_Y = 768;

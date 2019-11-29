@@ -10,7 +10,7 @@ struct HitRecord
 {
 	double t;
 	Vec3 point;
-	Vec3 norm;
+	Vec3 normal;
 	Material* matPtr;
 	double u;
 	double v;

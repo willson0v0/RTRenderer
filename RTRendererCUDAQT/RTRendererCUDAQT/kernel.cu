@@ -35,6 +35,32 @@ extern "C" void launchKernal()
 	cuHelloWorld <<<1, 1 >>> ();
 }
 
+__device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* localRandState)
+{
+	HitRecord rec;
+	if ((*world)->hit(r, 0.001, FLT_MAX, rec)) {
+		Ray scattered;
+		Vec3 attenuation;
+		Vec3 emitted = rec.matPtr->emitted(rec.u, rec.v, rec.point);
+		if (depth < ITER && rec.matPtr->scatter(r, rec, attenuation, scattered, localRandState)) {
+			return emitted + attenuation * color(scattered, world, depth + 1, localRandState);
+		}
+		else {
+			return emitted;
+		}
+	}
+	else {
+#ifdef DARKSCENE
+		Vec3 c(0, 0, 0);
+#else
+		Vec3 unit_direction = unitVector(cur_ray.direction);
+		double t = 0.5f * (unit_direction.e[1] + 1.0f);
+		Vec3 c = (1.0f - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
+#endif
+		return c;
+	}
+}
+
 __device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState)
 {
 	Ray cur_ray = r;
@@ -51,7 +77,7 @@ __device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState
 				cur_ray = scattered;
 			}
 			else {
-				return cur_attenuation + emitted;
+				return cur_attenuation * emitted;
 			}
 		}
 		else {
@@ -96,7 +122,7 @@ __global__ void render(int frameCount, double* fBuffer, Camera** cam, Hittable**
 	}
 	randState[index] = localRandState;
 	pixel /= double(SPP);
-	pixel /= frameCount + 1;
+	pixel /= frameCount + 1.0;
 	pixel.e[0] = sqrt(pixel.e[0]);
 	pixel.e[1] = sqrt(pixel.e[1]);
 	pixel.e[2] = sqrt(pixel.e[2]);
@@ -124,9 +150,9 @@ int main(int argc, char* argv[])
 
 	size_t* pValue = new size_t;
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
-	std::cout << "Stack size limit: \t\t\t" << *pValue << "Byte. Resizing to 32768...";
+	std::cout << "Stack size limit: \t\t\t" << *pValue << "Byte. Resizing to 65536...";
 
-	checkCudaErrors(cudaDeviceSetLimit(cudaLimitStackSize, 1 << 15));
+	checkCudaErrors(cudaDeviceSetLimit(cudaLimitStackSize, 1 << 16));
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
 	std::cout << "...Done. \nStack size limit: \t\t\t" << *pValue << "Byte.\n";
 
@@ -170,8 +196,10 @@ int main(int argc, char* argv[])
 	checkCudaErrors(cudaMalloc((void**)&t, sizeof(unsigned char) * em.rows * em.cols * 3));
 	checkCudaErrors(cudaMemcpy(t, em.data, sizeof(unsigned char) * em.rows * em.cols * 3, cudaMemcpyHostToDevice));
 
-	createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState);
-	//createWorld1 <<<1, 1 >>> (cudaList, cudaWorld, cudaCam);
+	// createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState);
+	// createWorld1 <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	// createCheckerTest <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	createCornellBox <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
@@ -204,7 +232,7 @@ int main(int argc, char* argv[])
 
 		ms = double(clock() - clk);
 		renderTime = ms - renderTime;
-		std::cout << std::fixed << std::setprecision(2) << "Render Time: " << renderTime / 1000.0 << " / " << (ms - renderStart) / 1000.0 / frameCount << " / " << (ms - renderStart)/1000.0 << "\ts, current SPP = " << frameCount * SPP << "\r\n";
+		std::cout << std::fixed << std::setprecision(2) << "Render Time: " << renderTime / 1000.0 << " / " << (ms - renderStart) / 1000.0 / frameCount << " / " << (ms - renderStart)/1000.0 << " s, current SPP = " << frameCount * SPP << "\r\n";
 
 		M.data = (uchar*)frameBuffer;
 		cv::imshow("wow", M);

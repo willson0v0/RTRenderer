@@ -5,6 +5,8 @@
 #include "Material.h"
 #include "Sphere.h"
 #include "Rectangles.h"
+#include "Box.h"
+#include "Translation.h"
 #include "HittableList.h"
 #include "BVH.h"
 
@@ -35,6 +37,34 @@ __global__ void createWorld1(Hittable** list, Hittable** world, Camera** camera,
 	*camera = new Camera(MAX_X, MAX_Y, 30.0f, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }
 
+__global__ void createCheckerTest(Hittable** list, Hittable** world, Camera** camera, curandState* randState)
+{
+	list[0] = new Sphere(Vec3(0, -50.0, -1), 50, new Lambertian(
+		new CheckerTexture(
+			new ConstantTexture(Vec3(0.3, 0.5, 0.9)),
+			new ConstantTexture(Vec3(0.9, 0.9, 0.9))
+		)
+	));
+	list[1] = new Sphere(Vec3(0, 50.0, -1), 50, new Lambertian(
+		new CheckerTexture(
+			new ConstantTexture(Vec3(0.9, 0.9, 0.9)),
+			new ConstantTexture(Vec3(0.5, 0.3, 0.9))
+		)
+	));
+
+#ifdef USE_BVH
+	* world = new BVH(list, 2, randState);
+#else
+	* world = new HittableList(list, 2);
+#endif
+
+	Vec3 lookfrom(10, 0, 10);
+	Vec3 lookat(0, 0, 0);
+	double focusDist = (lookfrom - lookat).length();
+	double aperture = 0.05;
+	*camera = new Camera(MAX_X, MAX_Y, 60.0f, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
+}
+
 #define RND (curand_uniform(randState))
 __global__ void createRandScene(Hittable** list, Hittable** world, Camera** camera, unsigned char* texture, int tx, int ty, curandState* randState)
 {
@@ -55,8 +85,8 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 	list[i++] = new Sphere(Vec3(0, 1, 0), 1.0, new Lambertian(new NoiseTexture(4)));
 	list[i++] = new Sphere(Vec3(-4, 1, 0), 1.0, new Metal(Vec3(0.7, 0.6, 0.5), 0.0));
 
-	list[i++] = new Sphere(Vec3(-5, 3, 2), 1, new DiffuseLight(new ConstantTexture(Vec3(0.8, 0.2, 0.8))));
-	list[i++] = new RectXY(3, 5, 1, 3, -3, new DiffuseLight(new ConstantTexture(Vec3(0.2, 0.8, 0.8))));
+	list[i++] = new Sphere(Vec3(-5, 3, 2), 1, new DiffuseLight(new ConstantTexture(Vec3(2, 1, 2))));
+	list[i++] = new RectXY(3, 5, 1, 3, -3, new DiffuseLight(new ConstantTexture(Vec3(1, 2, 1))));
 	
 	for (int a = -11; a < 11; a++) {
 		for (int b = -11; b < 11; b++) {
@@ -80,7 +110,7 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 	curand_init(2019, 0, 0, randState);
 
 #ifdef USE_BVH
-	* world = new BVH(list, 22 * 22 + 8, randState);
+	* world = new BVH(list, i, randState);
 #else
 	*world = new HittableList(list, 22*22+8);
 #endif
@@ -90,4 +120,43 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 	double focusDist = (lookfrom - lookat).length() - 4;
 	double aperture = 0.1;
 	*camera = new Camera(MAX_X, MAX_Y, 30, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
+}
+
+__global__ void createCornellBox(Hittable** list, Hittable** world, Camera** camera, curandState* randState)
+{
+	curand_init(clock(), 0, 0, randState);
+	int i = 0;
+
+	list[i++] = new RectYZ(000, 555, 000, 555, 555, new Lambertian(new ConstantTexture(0.12, 0.45, 0.15)));
+	list[i++] = new RectYZ(000, 555, 000, 555, 000,	new Lambertian(new ConstantTexture(0.65, 0.05, 0.05)));
+	list[i++] = new RectXZ(213, 343, 227, 332, 554, new DiffuseLight(new ConstantTexture(15, 15, 15)));
+	list[i++] = new RectXZ(000, 555, 000, 555, 555, new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
+	list[i++] = new RectXZ(000, 555, 000, 555, 000, new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
+	list[i++] = new RectXY(000, 555, 000, 555, 555, new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
+
+	list[i++] = new Box(Vec3(0, 0, 0), Vec3(165, 165, 165), new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
+	list[i++] = new Box(Vec3(0, 0, 0), Vec3(165, 330, 165), new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
+
+	list[0] = new FlipNorm(list[0]);
+	list[3] = new FlipNorm(list[3]);
+	list[5] = new FlipNorm(list[5]);
+
+	list[6] = new RotateY(list[6], -18);
+	list[6] = new Translate(list[6], Vec3(130, 0, 65));
+
+	list[7] = new RotateY(list[7], 15);
+	list[7] = new Translate(list[7], Vec3(265, 0, 295));
+
+
+#ifdef USE_BVH
+	* world = new BVH(list, i, randState);
+#else
+	* world = new HittableList(list, i);
+#endif
+
+	Vec3 lookfrom(278, 278, -800);
+	Vec3 lookat(278, 278, 0);
+	double focusDist = (lookfrom - lookat).length();
+	double aperture = 0;
+	*camera = new Camera(MAX_X, MAX_Y, 40, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }

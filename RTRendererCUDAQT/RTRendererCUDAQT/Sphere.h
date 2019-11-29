@@ -32,7 +32,7 @@ __device__ bool Sphere::hit(const Ray& r, double tMin, double tMax, HitRecord& r
 		{
 			rec.t = t;
 			rec.point = r.pointAtParam(t);
-			rec.norm = (rec.point - center) / radius;
+			rec.normal = (rec.point - center) / radius;
 			rec.matPtr = matPtr;
 			getSphereUV((rec.point - center) / radius, rec.u, rec.v);
 			return true;
@@ -42,7 +42,7 @@ __device__ bool Sphere::hit(const Ray& r, double tMin, double tMax, HitRecord& r
 		{
 			rec.t = t;
 			rec.point = r.pointAtParam(t);
-			rec.norm = (rec.point - center) / radius;
+			rec.normal = (rec.point - center) / radius;
 			rec.matPtr = matPtr;
 			getSphereUV((rec.point - center) / radius, rec.u, rec.v);
 			return true;
