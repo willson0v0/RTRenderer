@@ -3,6 +3,7 @@
 #include "device_launch_parameters.h"
 
 #include <iostream>
+#include <iomanip>
 #include <opencv/cv.hpp>
 #include <opencv2/photo/cuda.hpp>
 #include "cudaExamp.h"
@@ -20,10 +21,6 @@
 
 #include "RTRendererCUDAQT.h"
 #include <QtWidgets/QApplication>
-
-#define ALLOWOUTOFBOUND
-
-#define DARKSCENE
 
 constexpr auto ITER = 50;
 constexpr auto SPP = 4;
@@ -125,6 +122,25 @@ int main(int argc, char* argv[])
 	std::cout << "Rendering a " << MAX_X << "x" << MAX_Y << " image ";
 	std::cout << "in " << BLK_X << "x" << BLK_Y << " blocks, SPP = " <<SPP<<" & depth = "<<ITER<<"\n";
 
+	size_t* pValue = new size_t;
+	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
+	std::cout << "Stack size limit: \t\t\t" << *pValue << "Byte. Resizing to 32768...";
+
+	checkCudaErrors(cudaDeviceSetLimit(cudaLimitStackSize, 1 << 15));
+	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
+	std::cout << "...Done. \nStack size limit: \t\t\t" << *pValue << "Byte.\n";
+
+	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitPrintfFifoSize));
+	std::cout << "printf() fifo limit: \t\t\t" << *pValue << "Byte.\n";
+	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitMallocHeapSize));
+	std::cout << "Malloc heap size limit: \t\t" << *pValue << "Byte.\n";
+	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitDevRuntimeSyncDepth));
+	std::cout << "cudaLimitDevRuntimeSyncDepth: \t\t" << *pValue << ".\n";
+	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitDevRuntimePendingLaunchCount));
+	std::cout << "cudaLimitDevRuntimePendingLaunchCount: \t" << *pValue << ".\n";
+	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitMaxL2FetchGranularity));
+	std::cout << "cudaLimitMaxL2FetchGranularity: \t" << *pValue << "Byte.\n";
+
 #ifdef _DEBUG
 	std::cout << "Warning: Compiled in debug mode and it hurt performance.\n";
 #endif
@@ -142,7 +158,7 @@ int main(int argc, char* argv[])
 	checkCudaErrors(cudaMalloc((void**)&cudaWorld, sizeof(Hittable*)));
 	Camera** cudaCam;
 	checkCudaErrors(cudaMalloc((void**)&cudaCam, sizeof(Camera*)));
-
+	
 	double ms = double(clock() - clk);
 	std::cout << "Alloc \t\t@ t+ " << ms << " ms.\r\n";
 
@@ -173,10 +189,10 @@ int main(int argc, char* argv[])
 	checkCudaErrors(cudaDeviceSynchronize());
 
 	ms = double(clock() - clk);
+	double renderStart = ms;
 	std::cout << "init rander \t@ t+ " << ms << " ms.\r\n";
 
 	int frameCount = 0;
-
 	while (1)
 	{
 		renderTime = ms;
@@ -188,7 +204,7 @@ int main(int argc, char* argv[])
 
 		ms = double(clock() - clk);
 		renderTime = ms - renderTime;
-		std::cout << "Render Time: " << renderTime/1000.0 << "\t/" << ms/1000.0 << "\ts, current SPP = " << frameCount * SPP << "\r\n";
+		std::cout << std::fixed << std::setprecision(2) << "Render Time: " << renderTime / 1000.0 << " / " << (ms - renderStart) / 1000.0 / frameCount << " / " << (ms - renderStart)/1000.0 << "\ts, current SPP = " << frameCount * SPP << "\r\n";
 
 		M.data = (uchar*)frameBuffer;
 		cv::imshow("wow", M);

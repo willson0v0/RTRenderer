@@ -4,7 +4,9 @@
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 
-__device__ bool compare(const Hittable* a, const Hittable* b);
+__device__ bool compareX(const Hittable* a, const Hittable* b);
+__device__ bool compareY(const Hittable* a, const Hittable* b);
+__device__ bool compareZ(const Hittable* a, const Hittable* b);
 //__device__ void sortHittables(Hittable** list, int start, int stop);
 
 class BVH : public Hittable
@@ -14,8 +16,8 @@ public:
 	Hittable* right;
 	AABB box;
 
-	BVH() {}
-	BVH(Hittable** l, int n);
+	__device__ BVH() {}
+	__device__ BVH(Hittable** l, int n, curandState* localRandstate);
 
 	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const;
 	__device__ virtual bool boundingBox(AABB& box) const;
@@ -54,23 +56,26 @@ __device__ bool BVH::hit(const Ray& r, double tMin, double tMax, HitRecord& rec)
 	}
 }
 
-__device__ BVH::BVH(Hittable** l, int n)
+__device__ BVH::BVH(Hittable** l, int n, curandState* localRandState)
 {
-	printf("Building BVH tree for %p of length %d\r\nSorting", l, n);
+	curandState rs = *localRandState;
 
 	thrust::device_ptr<Hittable*> lt(l);
-	thrust::sort(lt, lt + n, compare);
-	//sortHittables(l, 0, n);
-	
 
-	for (int i = 0; i < n; i++)
+	int div = 3 * curand_uniform(localRandState);
+	switch (div)
 	{
-		AABB temp;
-		l[i]->boundingBox(temp);
-		printf("%.1lf\t", temp.near.e[0]);
+	case 0:
+		thrust::sort(lt, lt + n, compareX);
+		break;
+	case 1:
+		thrust::sort(lt, lt + n, compareY);
+		break;
+	case 2:
+	default:
+		thrust::sort(lt, lt + n, compareZ);
+		break;
 	}
-
-	printf("---DONE\r\n");
 
 	if (n == 1)
 	{
@@ -83,18 +88,19 @@ __device__ BVH::BVH(Hittable** l, int n)
 	}
 	else
 	{
-		left = new BVH(l, n / 2);
-		right = new BVH(l + n / 2, n - n / 2);
+		left = new BVH(l, n / 2, localRandState);
+		right = new BVH(l + n / 2, n - n / 2, localRandState);
 	}
 
 	AABB lBox, rBox;
 
 	if (!left->boundingBox(lBox) || !right->boundingBox(rBox))
 	{
-		printf("bvh no bb");
+		printf("warning: bvh no bb");
 	}
 
 	box = surroundingBox(lBox, rBox);
+	*localRandState = rs;
 }
 
 __device__ bool BVH::boundingBox(AABB& b) const
@@ -102,7 +108,8 @@ __device__ bool BVH::boundingBox(AABB& b) const
 	b = box;
 	return true;
 }
-/*
+
+//vvvvv deprecated: use thrust lib instead. vvvvv
 __device__ void sortHittables(Hittable** list, int start, int stop)
 {
 	if (stop - start <= 1) return;
@@ -130,23 +137,34 @@ __device__ void sortHittables(Hittable** list, int start, int stop)
 
 	sortHittables(list, start, largerEnd);
 	sortHittables(list, largerEnd+1, stop);
-}*/
+}
 
-__device__ bool compare(const Hittable* a, const Hittable* b)
+__device__ bool compareX(const Hittable* a, const Hittable* b)
 {
 	AABB lBox, rBox;
-	
 	if (!a->boundingBox(lBox) || !b->boundingBox(rBox))
 	{
-		printf("ohhhhhh\n");
+		printf("Warning: No Bounding box in constructor\n");
 	}
+	return (lBox.near.e[0] < rBox.near.e[0]);
+}
 
-	if (lBox.near.e[0] - rBox.near.e[0] < 0.0)
+__device__ bool compareY(const Hittable* a, const Hittable* b)
+{
+	AABB lBox, rBox;
+	if (!a->boundingBox(lBox) || !b->boundingBox(rBox))
 	{
-		return -1;
+		printf("Warning: No Bounding box in constructor\n");
 	}
-	else
+	return (lBox.near.e[1] < rBox.near.e[1]);
+}
+
+__device__ bool compareZ(const Hittable* a, const Hittable* b)
+{
+	AABB lBox, rBox;
+	if (!a->boundingBox(lBox) || !b->boundingBox(rBox))
 	{
-		return 1;
+		printf("Warning: No Bounding box in constructor\n");
 	}
+	return (lBox.near.e[2] < rBox.near.e[2]);
 }

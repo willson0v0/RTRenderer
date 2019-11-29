@@ -40,9 +40,9 @@ __device__ AABB surroundingBox(AABB box0, AABB box1)
 	);
 
 	Vec3 far(
-		ffmin(box0.far.e[0], box1.far.e[0]),
-		ffmin(box0.far.e[1], box1.far.e[1]),
-		ffmin(box0.far.e[2], box1.far.e[2])
+		ffmax(box0.far.e[0], box1.far.e[0]),
+		ffmax(box0.far.e[1], box1.far.e[1]),
+		ffmax(box0.far.e[2], box1.far.e[2])
 	);
 
 	return AABB(near, far);

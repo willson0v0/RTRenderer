@@ -10,11 +10,11 @@
 #include "Vec3.h"
 #include <opencv/cv.hpp>
 
-__device__ double ffmin(double a, double b)
+__device__ __host__ double ffmin(double a, double b)
 {
 	return a < b ? a : b;
 }
-__device__ double ffmax(double a, double b)
+__device__ __host__ double ffmax(double a, double b)
 {
 	return a > b ? a : b;
 }
@@ -26,16 +26,24 @@ __device__ double ffmax(double a, double b)
 //									  func			file name
 
 // DON'T CALL THIS! Use marco to auto generate msgs.
-void checkCuda(cudaError_t result, char const* const func, const char* const file, int const line)
+__host__ void checkCuda(cudaError_t result, char const* const func, const char* const file, int const line)
 {
 	if (result)
 	{
+		/*
 		std::cerr 
 			<< " CUDA ERROR: \r\n" 
 			<< cudaGetErrorName(result) <<" : "<<cudaGetErrorString(result)
 			<< " @ " << file 
 			<< " : " << line 
 			<< " , " << func << std::endl;
+		*/
+		printf("Cuda Error: \n %s (%s) @ %s: %d, %s\n", 
+			cudaGetErrorName(result), 
+			cudaGetErrorString(result),
+			file,
+			line,
+			func);
 		cudaDeviceReset();
 		system("pause");
 		exit(-1);
