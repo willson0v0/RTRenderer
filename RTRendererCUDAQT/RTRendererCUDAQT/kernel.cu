@@ -240,10 +240,16 @@ int main(int argc, char* argv[])
 	double renderStart = ms;
 	printMsg(LogLevel::info, "Init renderer finished @ %lf ms", ms);
 
-	printMsg(LogLevel::info, "=============================================");
-	printMsg(LogLevel::info, "Starting renderer, press q in prompt to quit.");
-	printMsg(LogLevel::info, "=============================================");
+	printMsg(LogLevel::info, "=================================================");
+	printMsg(LogLevel::info, "||Starting renderer, press q in prompt to quit.||");
+	printMsg(LogLevel::info, "=================================================\n");
+
+	printMsg(LogLevel::info, "\t\t+---------------+---------------+---------------+");
+	printMsg(LogLevel::info, "\t\t|   cur.\t|   avg.\t|  total\t|");
+	printMsg(LogLevel::info, "\t\t+---------------+---------------+---------------+");
 	printMsg(LogLevel::info, "");
+	printMsg(LogLevel::info, "\t\t+---------------+---------------+---------------+");
+	printf("\033[A\r");
 
 	int frameCount = 0;
 	while (1)
@@ -258,13 +264,14 @@ int main(int argc, char* argv[])
 		ms = double(clock() - clk);
 		renderTime = ms - renderTime;
 		clearLine();
-		printMsg(LogLevel::debug, "Render Time:\t%.2lf /\t%.2lf /\t%.2lf s, %.6lf fps, Current SPP: %d", renderTime / 1000.0, (ms - renderStart) / 1000.0 / frameCount, (ms - renderStart) / 1000.0, 1000.0 * frameCount / (ms - renderStart),frameCount * SPP);
+		printMsg(LogLevel::info, "Render Time:\t|%*.2lf \t|%*.2lf \t|%*.2lf\t|s, %.6lf fps, Current SPP: %d", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / frameCount, 7, (ms - renderStart) / 1000.0, 1000.0 * frameCount / (ms - renderStart),frameCount * SPP);
 
 		M.data = (uchar*)frameBuffer;
 		cv::imshow("wow", M);
 		if (cv::waitKey(1) == 27) break;
 		if (_kbhit() && getch() == 'q') break;
 	}
+	printMsg(LogLevel::info, "\t\t+---------------+---------------+---------------+");
 
 	printMsg(LogLevel::debug, "Exec time: %lf ms. Saving result...", ms);
 

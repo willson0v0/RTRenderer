@@ -99,40 +99,45 @@ __host__ __device__ void printMsg(LogLevel ll, const char* msg, Arguments... arg
 		if (logLevel >= LogLevel::debug)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_GREEN);
-			printf("\n[Debug]: ");
+			printf("[Debug]: ");
 			printf(msg, args...);
+			printf("\n");
 		}
 		break;
 	case LogLevel::info:
 		if (logLevel >= LogLevel::info)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_RESET);
-			printf("\n[Info]: ");
+			printf("[Info]: ");
 			printf(msg, args...);
+			printf("\n");
 		}
 		break;
 	case LogLevel::warning:
 		if (logLevel >= LogLevel::warning)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_YELLOW);
-			printf("\n[Warning]: ");
+			printf("[Warning]: ");
 			printf(msg, args...);
+			printf("\n");
 		}
 		break;
 	case LogLevel::error:
 		if (logLevel >= LogLevel::error)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_RED);
-			printf("\n[Error]: ");
+			printf("[Error]: ");
 			printf(msg, args...);
+			printf("\n");
 		}
 		break;
 	case LogLevel::fatal:
 		if (logLevel >= LogLevel::fatal)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_RED);
-			printf("\n[Fatal]: ");
+			printf("[Fatal]: ");
 			printf(msg, args...);
+			printf("\n");
 		}
 		break;
 	default:
@@ -143,7 +148,7 @@ __host__ __device__ void printMsg(LogLevel ll, const char* msg, Arguments... arg
 
 __host__ __device__ void clearLine()
 {
-	printf("\033[2K\033[A\r");
+	printf("\033[A\033[2K\r");
 }
 
 __host__ bool enableVTMode()

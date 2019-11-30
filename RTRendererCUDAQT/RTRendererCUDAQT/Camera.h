@@ -34,7 +34,8 @@ public:
 			- w * focus;
 		horizonal = 2 * halfWidth * u * focus;
 		vertical = 2 * halfHeight * v * focus;
-		printMsg(LogLevel::debug, "Camera Loaded. \n\t%d * %d, (%.2lf, %.2lf, %.2lf) -> (%.2lf, %.2lf, %.2lf), fov = %.2lf, aperture = %.2lf, focus distance = %.2lf",
+		printMsg(LogLevel::debug, "Camera Loaded.");
+		printMsg(LogLevel::debug, "cam: %d*%d, (%.2lf, %.2lf, %.2lf) -> (%.2lf, %.2lf, %.2lf), fov = %.2lf, aperture = %.2lf, focus distance = %.2lf",
 			MAX_X,
 			MAX_Y,
 			lookFrom.e[0],
