@@ -69,9 +69,13 @@ __global__ void createCheckerTest(Hittable** list, Hittable** world, Camera** ca
 #define RND (curand_uniform(randState))
 __global__ void createRandScene(Hittable** list, Hittable** world, Camera** camera, unsigned char* texture, int tx, int ty, curandState* randState)
 {
+	printMsg(LogLevel::info, "Using scene: Cornell Smoke.");
+
 	curand_init(clock(), 0, 0, randState);
+	printMsg(LogLevel::debug, "curandInit complete.");
 
 	initPerlin(randState);
+	printMsg(LogLevel::debug, "Noise Generation complete.");
 
 	int i = 0;
 	list[i++] = new Sphere(Vec3(0, -10000.0, -1), 10000, new Lambertian(
@@ -86,8 +90,8 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 	list[i++] = new Sphere(Vec3(0, 1, 0), 1.0, new Lambertian(new NoiseTexture(4)));
 	list[i++] = new Sphere(Vec3(-4, 1, 0), 1.0, new Metal(Vec3(0.7, 0.6, 0.5), 0.0));
 
-	list[i++] = new Sphere(Vec3(-5, 3, 2), 1, new DiffuseLight(new ConstantTexture(Vec3(2, 1, 2))));
-	list[i++] = new RectXY(3, 5, 1, 3, -3, new DiffuseLight(new ConstantTexture(Vec3(1, 2, 1))));
+	list[i++] = new Sphere(Vec3(-5, 3, 2), 1, new DiffuseLight(new ConstantTexture(Vec3(10, 5, 10))));
+	list[i++] = new RectXY(3, 5, 1, 3, -3, new DiffuseLight(new ConstantTexture(Vec3(5, 10, 5))));
 	
 	for (int a = -11; a < 11; a++) {
 		for (int b = -11; b < 11; b++) {
@@ -108,6 +112,8 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 		}
 	}
 
+	printMsg(LogLevel::debug, "Scene generation complete.");
+
 	curand_init(2019, 0, 0, randState);
 
 #ifdef USE_BVH
@@ -115,12 +121,28 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 #else
 	*world = new HittableList(list, 22*22+8);
 #endif
+	printMsg(LogLevel::debug, "Scene Loaded.");
 
 	Vec3 lookfrom(13, 2, 3);
 	Vec3 lookat(0, 0, 0);
 	double focusDist = (lookfrom - lookat).length() - 4;
 	double aperture = 0.1;
-	*camera = new Camera(MAX_X, MAX_Y, 30, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
+	double fov = 30.0;
+	*camera = new Camera(MAX_X, MAX_Y, fov, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
+
+	printMsg(LogLevel::debug, "Camera Loaded. \n\t%d * %d, (%.2lf, %.2lf, %.2lf) -> (%.2lf, %.2lf, %.2lf), fov = %.2lf, aperture = %.2lf, focus distance = %.2lf", 
+		MAX_X, 
+		MAX_Y,
+		lookfrom.e[0],
+		lookfrom.e[1],
+		lookfrom.e[2],
+		lookat.e[0],
+		lookat.e[1],
+		lookat.e[2],
+		fov,
+		aperture,
+		focusDist
+	);
 }
 
 __global__ void createCornellBox(Hittable** list, Hittable** world, Camera** camera, curandState* randState)
@@ -165,6 +187,8 @@ __global__ void createCornellBox(Hittable** list, Hittable** world, Camera** cam
 
 __global__ void createCornellSmoke(Hittable** list, Hittable** world, Camera** camera, curandState* randState)
 {
+	printMsg(LogLevel::info, "Using scene: Cornell Smoke.");
+
 	curand_init(clock(), 0, 0, randState);
 	int i = 0;
 
@@ -178,11 +202,9 @@ __global__ void createCornellSmoke(Hittable** list, Hittable** world, Camera** c
 	list[i++] = new Box(Vec3(0, 0, 0), Vec3(165, 165, 165), new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
 	list[i++] = new Box(Vec3(0, 0, 0), Vec3(165, 330, 165), new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
 
-	list[i++] = new Sphere(Vec3(185, 278, 278), 70, new Dielectric(Vec3(1, 1, 1), 1.5, 0));
-	list[i++] = new Sphere(Vec3(370, 278, 278), 70, new Dielectric(Vec3(1, 1, 1), 1.5, 0));
+	list[i++] = new Sphere(Vec3(450, 70, 50), 70, new Dielectric(Vec3(1, 1, 1), 1.5, 0));
 
-	list[i++] = new ConstantMedium(list[8], 0.2, new ConstantTexture(Vec3(0.2, 0.4, 0.9)));
-	list[i++] = new ConstantMedium(list[9], 0.0001, new ConstantTexture(Vec3(1, 1, 1)));
+	list[i++] = new ConstantMedium(list[8], 0.05, new ConstantTexture(Vec3(0.2, 0.4, 0.9)));
 
 	list[0] = new FlipNorm(list[0]);
 	list[3] = new FlipNorm(list[3]);

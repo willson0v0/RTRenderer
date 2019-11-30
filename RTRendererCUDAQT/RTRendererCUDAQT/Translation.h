@@ -28,8 +28,8 @@ public:
 	{
 		if (origin->boundingBox(box))
 		{
-			box.far += offset;
-			box.near += offset;
+			box.farVec += offset;
+			box.nearVec += offset;
 			return true;
 		}
 		else return false;
@@ -56,15 +56,15 @@ public:
 		double x[4];
 		double z[4];
 
-		x[0] = cosTheta * bBox.far.e[0] + sinTheta * bBox.far.e[2];
-		x[1] = cosTheta * bBox.far.e[0] + sinTheta * bBox.near.e[2];
-		x[2] = cosTheta * bBox.near.e[0] + sinTheta * bBox.far.e[2];
-		x[3] = cosTheta * bBox.near.e[0] + sinTheta * bBox.near.e[2];
+		x[0] = cosTheta * bBox.farVec.e[0] + sinTheta * bBox.farVec.e[2];
+		x[1] = cosTheta * bBox.farVec.e[0] + sinTheta * bBox.nearVec.e[2];
+		x[2] = cosTheta * bBox.nearVec.e[0] + sinTheta * bBox.farVec.e[2];
+		x[3] = cosTheta * bBox.nearVec.e[0] + sinTheta * bBox.nearVec.e[2];
 
-		z[0] = -sinTheta * bBox.far.e[0] + cosTheta * bBox.far.e[2];
-		z[1] = -sinTheta * bBox.far.e[0] + cosTheta * bBox.near.e[2];
-		z[2] = -sinTheta * bBox.near.e[0] + cosTheta * bBox.far.e[2];
-		z[3] = -sinTheta * bBox.near.e[0] + cosTheta * bBox.near.e[2];
+		z[0] = -sinTheta * bBox.farVec.e[0] + cosTheta * bBox.farVec.e[2];
+		z[1] = -sinTheta * bBox.farVec.e[0] + cosTheta * bBox.nearVec.e[2];
+		z[2] = -sinTheta * bBox.nearVec.e[0] + cosTheta * bBox.farVec.e[2];
+		z[3] = -sinTheta * bBox.nearVec.e[0] + cosTheta * bBox.nearVec.e[2];
 
 		double xMin = DBL_MAX;
 		double xMax = DBL_MIN;
@@ -81,15 +81,15 @@ public:
 			zMax = zMax > z[i] ? zMax : z[i];
 		}
 
-		if (bBox.far.e[1] > bBox.near.e[1])
+		if (bBox.farVec.e[1] > bBox.nearVec.e[1])
 		{
-			yMin = bBox.near.e[1];
-			yMax = bBox.far.e[1];
+			yMin = bBox.nearVec.e[1];
+			yMax = bBox.farVec.e[1];
 		}
 		else
 		{
-			yMin = bBox.far.e[1];
-			yMax = bBox.near.e[1];
+			yMin = bBox.farVec.e[1];
+			yMax = bBox.nearVec.e[1];
 		}
 
 		bBox = AABB(Vec3(xMin, yMin, zMin), Vec3(xMax, yMax, zMax));

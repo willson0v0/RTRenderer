@@ -122,13 +122,13 @@ __device__ void sortHittables(Hittable** list, int start, int stop)
 		{
 			printf("No bb @ sort");
 		}
-		if (cBox.near.e[0] - pivitBox.far.e[0] > 0.0)
+		if (cBox.nearVec.e[0] - pivitBox.farVec.e[0] > 0.0)
 		{
 			Hittable* ptr = list[largerEnd];
 			list[largerEnd] = list[i];
 			list[i] = ptr;
 		}
-		printf("%d  ", cBox.near.e[0]);
+		printf("%d  ", cBox.nearVec.e[0]);
 	}
 
 	Hittable* ptr = list[largerEnd];
@@ -146,7 +146,7 @@ __device__ bool compareX(const Hittable* a, const Hittable* b)
 	{
 		printf("Warning: No Bounding box in constructor\n");
 	}
-	return (lBox.near.e[0] < rBox.near.e[0]);
+	return (lBox.nearVec.e[0] < rBox.nearVec.e[0]);
 }
 
 __device__ bool compareY(const Hittable* a, const Hittable* b)
@@ -156,7 +156,7 @@ __device__ bool compareY(const Hittable* a, const Hittable* b)
 	{
 		printf("Warning: No Bounding box in constructor\n");
 	}
-	return (lBox.near.e[1] < rBox.near.e[1]);
+	return (lBox.nearVec.e[1] < rBox.nearVec.e[1]);
 }
 
 __device__ bool compareZ(const Hittable* a, const Hittable* b)
@@ -166,5 +166,5 @@ __device__ bool compareZ(const Hittable* a, const Hittable* b)
 	{
 		printf("Warning: No Bounding box in constructor\n");
 	}
-	return (lBox.near.e[2] < rBox.near.e[2]);
+	return (lBox.nearVec.e[2] < rBox.nearVec.e[2]);
 }

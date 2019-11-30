@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <conio.h>
 #include <opencv/cv.hpp>
 #include <opencv2/photo/cuda.hpp>
 #include "cudaExamp.h"
@@ -21,6 +22,7 @@
 
 #include "RTRendererCUDAQT.h"
 #include <QtWidgets/QApplication>
+
 
 constexpr auto ITER = 50;
 constexpr auto SPP = 4;
@@ -141,34 +143,47 @@ __global__ void rander_init(curandState* randState)
 
 int main(int argc, char* argv[])
 {
+	VTModeEnabled = enableVTMode();
+
 	clock_t clk;
 	clk = clock();
 	double renderTime;
 
-	std::cout << "Rendering a " << MAX_X << "x" << MAX_Y << " image ";
-	std::cout << "in " << BLK_X << "x" << BLK_Y << " blocks, SPP = " <<SPP<<" & depth = "<<ITER<<"\n";
+	printMsg(LogLevel::info, "Rendering a %d x %d image in %d x %d blocks", MAX_X, MAX_Y, BLK_X, BLK_Y);
+	printMsg(LogLevel::info, "SPP(per frame) = %d, depth = %d", SPP, ITER);
 
 	size_t* pValue = new size_t;
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
-	std::cout << "Stack size limit: \t\t\t" << *pValue << "Byte. Resizing to 65536...";
+	printMsg(LogLevel::debug, "Stack size limit: \t\t%zu Byte.", *pValue);
 
-	checkCudaErrors(cudaDeviceSetLimit(cudaLimitStackSize, 1 << 16));
-	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
-	std::cout << "...Done. \nStack size limit: \t\t\t" << *pValue << "Byte.\n";
+	if (*pValue < 65536)
+	{
+		printMsg(LogLevel::warning, "Stack size too small(%zu Byte), Resizing to 65536...", *pValue);
+		checkCudaErrors(cudaDeviceSetLimit(cudaLimitStackSize, 65536));
+		checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
+		printMsg(LogLevel::debug, "Stack size limit: \t\t%zu Byte.", *pValue);
+		if (*pValue < 65535)
+		{
+			printMsg(LogLevel::fatal, "Stack resized failed. Quit now.");
+			cudaDeviceReset();
+			system("pause");
+			exit(-1);
+		}
+	}
 
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitPrintfFifoSize));
-	std::cout << "printf() fifo limit: \t\t\t" << *pValue << "Byte.\n";
+	printMsg(LogLevel::debug, "Printf FIFO size: \t\t%zu Byte.", *pValue);
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitMallocHeapSize));
-	std::cout << "Malloc heap size limit: \t\t" << *pValue << "Byte.\n";
+	printMsg(LogLevel::debug, "Heap size limit: \t\t%zu Byte.", *pValue);
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitDevRuntimeSyncDepth));
-	std::cout << "cudaLimitDevRuntimeSyncDepth: \t\t" << *pValue << ".\n";
+	printMsg(LogLevel::debug, "DevRuntimeSyncDepth: \t\t%zu .", *pValue);
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitDevRuntimePendingLaunchCount));
-	std::cout << "cudaLimitDevRuntimePendingLaunchCount: \t" << *pValue << ".\n";
+	printMsg(LogLevel::debug, "DevRuntimePendingLaunchCount: \t%zu Byte.", *pValue);
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitMaxL2FetchGranularity));
-	std::cout << "cudaLimitMaxL2FetchGranularity: \t" << *pValue << "Byte.\n";
+	printMsg(LogLevel::debug, "MaxL2FetchGranularity: \t%zu Byte.", *pValue);
 
 #ifdef _DEBUG
-	std::cout << "Warning: Compiled in debug mode and it hurt performance.\n";
+	printMsg(LogLevel::warning, "Compiled under debug mode. Performance is compromised.");
 #endif
 
 	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
@@ -184,29 +199,33 @@ int main(int argc, char* argv[])
 	checkCudaErrors(cudaMalloc((void**)&cudaWorld, sizeof(Hittable*)));
 	Camera** cudaCam;
 	checkCudaErrors(cudaMalloc((void**)&cudaCam, sizeof(Camera*)));
-	
+
 	double ms = double(clock() - clk);
-	std::cout << "Alloc \t\t@ t+ " << ms << " ms.\r\n";
+	printMsg(LogLevel::info, "Alloc finished @ %lf ms", ms);
 
 	curandState* worldGenRandState;
 	checkCudaErrors(cudaMalloc((void**)&worldGenRandState, sizeof(curandState)));
 
 	cv::Mat em = cv::imread("earthmap.jpg");
+	if (em.rows < 1 || em.cols < 1)
+	{
+		printMsg(LogLevel::error, "Failed to find Earth texture(earthmap.jpg).");
+	}
 	unsigned char* t;
 	checkCudaErrors(cudaMalloc((void**)&t, sizeof(unsigned char) * em.rows * em.cols * 3));
 	checkCudaErrors(cudaMemcpy(t, em.data, sizeof(unsigned char) * em.rows * em.cols * 3, cudaMemcpyHostToDevice));
 
-	// createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState);
+	createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState);
 	// createWorld1 <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 	// createCheckerTest <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 	// createCornellBox << <1, 1 >> > (cudaList, cudaWorld, cudaCam, worldGenRandState);
-	createCornellSmoke << <1, 1 >> > (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	// createCornellSmoke <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
 
 	ms = double(clock() - clk);
-	std::cout << "WorldGen \t@ t+ " << ms << " ms.\r\n";
+	printMsg(LogLevel::info, "World gen finished @ %lf ms", ms);
 
 	dim3 blocks(MAX_X / BLK_X + 1, MAX_Y / BLK_Y + 1);
 	dim3 threads(BLK_X, BLK_Y);
@@ -219,7 +238,11 @@ int main(int argc, char* argv[])
 
 	ms = double(clock() - clk);
 	double renderStart = ms;
-	std::cout << "init rander \t@ t+ " << ms << " ms.\r\n";
+	printMsg(LogLevel::info, "Init renderer finished @ %lf ms", ms);
+
+	printMsg(LogLevel::info, "=============================================");
+	printMsg(LogLevel::info, "Starting renderer, press q in prompt to quit.");
+	printMsg(LogLevel::info, "=============================================");
 
 	int frameCount = 0;
 	while (1)
@@ -233,19 +256,27 @@ int main(int argc, char* argv[])
 
 		ms = double(clock() - clk);
 		renderTime = ms - renderTime;
-		std::cout << std::fixed << std::setprecision(2) << "Render Time: " << renderTime / 1000.0 << " / " << (ms - renderStart) / 1000.0 / frameCount << " / " << (ms - renderStart)/1000.0 << " s, current SPP = " << frameCount * SPP << "\r\n";
+		printMsg(LogLevel::debug, "Render Time:\t%.2lf /\t%.2lf /\t%.2lf s, %.6lf fps, Current SPP: %d", renderTime / 1000.0, (ms - renderStart) / 1000.0 / frameCount, (ms - renderStart) / 1000.0, 1000.0 * frameCount / (ms - renderStart),frameCount * SPP);
 
 		M.data = (uchar*)frameBuffer;
 		cv::imshow("wow", M);
 		if (cv::waitKey(1) == 27) break;
+		if (_kbhit() && getch() == 'q') break;
 	}
 
+	printMsg(LogLevel::debug, "Exec time: %lf ms. Saving result...", ms);
 
-	ms = double(clock() - clk);
-	std::cout << "Exec time:\t" << ms << " ms.\r\nRender Time:\t" << renderTime << "ms\r\nExpected FPS:\t" << 1000.00 / renderTime;
+	const char* fileName = "result.png";
+	cv::Mat output;
+	M *= 255.99;
+	M.convertTo(output, CV_8UC3);
+	cv::imwrite(fileName, output);
 
+	printMsg(LogLevel::info, "File saved at: \"%s\"", fileName);
+	checkCudaErrors(cudaDeviceReset());
+	printMsg(LogLevel::debug, "Device reset finished.");
 
-	cudaDeviceReset();
+	system("Pause");
 
     return 0;
 }
