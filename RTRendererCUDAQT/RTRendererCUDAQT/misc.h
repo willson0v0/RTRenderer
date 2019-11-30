@@ -99,51 +99,51 @@ __host__ __device__ void printMsg(LogLevel ll, const char* msg, Arguments... arg
 		if (logLevel >= LogLevel::debug)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_GREEN);
-			printf("[Debug]: ");
+			printf("\n[Debug]: ");
 			printf(msg, args...);
-			printf("\n");
 		}
 		break;
 	case LogLevel::info:
 		if (logLevel >= LogLevel::info)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_RESET);
-			printf("[Info]: ");
+			printf("\n[Info]: ");
 			printf(msg, args...);
-			printf("\n");
 		}
 		break;
 	case LogLevel::warning:
 		if (logLevel >= LogLevel::warning)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_YELLOW);
-			printf("[Warning]: ");
+			printf("\n[Warning]: ");
 			printf(msg, args...);
-			printf("\n");
 		}
 		break;
 	case LogLevel::error:
 		if (logLevel >= LogLevel::error)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_RED);
-			printf("[Error]: ");
+			printf("\n[Error]: ");
 			printf(msg, args...);
-			printf("\n");
 		}
 		break;
 	case LogLevel::fatal:
 		if (logLevel >= LogLevel::fatal)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_RED);
-			printf("[Fatal]: ");
+			printf("\n[Fatal]: ");
 			printf(msg, args...);
-			printf("\n");
 		}
 		break;
 	default:
 		break;
 	}
 	if (VTModeEnabled) printf(ANSI_COLOR_RESET);
+}
+
+__host__ __device__ void clearLine()
+{
+	printf("\033[2K\033[A\r");
 }
 
 __host__ bool enableVTMode()
@@ -168,6 +168,7 @@ __host__ bool enableVTMode()
 		printMsg(LogLevel::error, "Failed to set CMD to VT mode. ANSI color wont behave properly.");
 		return false;
 	}
+	printMsg(LogLevel::info, "Set CMD to VT mode.");
 	return true;
 }
 

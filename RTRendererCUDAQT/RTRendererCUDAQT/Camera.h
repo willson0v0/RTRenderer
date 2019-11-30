@@ -34,6 +34,19 @@ public:
 			- w * focus;
 		horizonal = 2 * halfWidth * u * focus;
 		vertical = 2 * halfHeight * v * focus;
+		printMsg(LogLevel::debug, "Camera Loaded. \n\t%d * %d, (%.2lf, %.2lf, %.2lf) -> (%.2lf, %.2lf, %.2lf), fov = %.2lf, aperture = %.2lf, focus distance = %.2lf",
+			MAX_X,
+			MAX_Y,
+			lookFrom.e[0],
+			lookFrom.e[1],
+			lookFrom.e[2],
+			lookAt.e[0],
+			lookAt.e[1],
+			lookAt.e[2],
+			vfov,
+			aperture,
+			focus
+		);
 	}
 
 	__device__ Ray getRay(double s, double t, curandState* localRandState)

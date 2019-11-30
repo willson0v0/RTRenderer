@@ -243,6 +243,7 @@ int main(int argc, char* argv[])
 	printMsg(LogLevel::info, "=============================================");
 	printMsg(LogLevel::info, "Starting renderer, press q in prompt to quit.");
 	printMsg(LogLevel::info, "=============================================");
+	printMsg(LogLevel::info, "");
 
 	int frameCount = 0;
 	while (1)
@@ -256,6 +257,7 @@ int main(int argc, char* argv[])
 
 		ms = double(clock() - clk);
 		renderTime = ms - renderTime;
+		clearLine();
 		printMsg(LogLevel::debug, "Render Time:\t%.2lf /\t%.2lf /\t%.2lf s, %.6lf fps, Current SPP: %d", renderTime / 1000.0, (ms - renderStart) / 1000.0 / frameCount, (ms - renderStart) / 1000.0, 1000.0 * frameCount / (ms - renderStart),frameCount * SPP);
 
 		M.data = (uchar*)frameBuffer;

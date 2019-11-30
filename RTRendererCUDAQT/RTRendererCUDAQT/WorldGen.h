@@ -69,7 +69,7 @@ __global__ void createCheckerTest(Hittable** list, Hittable** world, Camera** ca
 #define RND (curand_uniform(randState))
 __global__ void createRandScene(Hittable** list, Hittable** world, Camera** camera, unsigned char* texture, int tx, int ty, curandState* randState)
 {
-	printMsg(LogLevel::info, "Using scene: Cornell Smoke.");
+	printMsg(LogLevel::info, "Using scene: Random balls.");
 
 	curand_init(clock(), 0, 0, randState);
 	printMsg(LogLevel::debug, "curandInit complete.");
@@ -129,20 +129,6 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 	double aperture = 0.1;
 	double fov = 30.0;
 	*camera = new Camera(MAX_X, MAX_Y, fov, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
-
-	printMsg(LogLevel::debug, "Camera Loaded. \n\t%d * %d, (%.2lf, %.2lf, %.2lf) -> (%.2lf, %.2lf, %.2lf), fov = %.2lf, aperture = %.2lf, focus distance = %.2lf", 
-		MAX_X, 
-		MAX_Y,
-		lookfrom.e[0],
-		lookfrom.e[1],
-		lookfrom.e[2],
-		lookat.e[0],
-		lookat.e[1],
-		lookat.e[2],
-		fov,
-		aperture,
-		focusDist
-	);
 }
 
 __global__ void createCornellBox(Hittable** list, Hittable** world, Camera** camera, curandState* randState)

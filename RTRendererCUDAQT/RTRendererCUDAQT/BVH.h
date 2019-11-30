@@ -96,7 +96,7 @@ __device__ BVH::BVH(Hittable** l, int n, curandState* localRandState)
 
 	if (!left->boundingBox(lBox) || !right->boundingBox(rBox))
 	{
-		printf("warning: bvh no bb");
+		printMsg(LogLevel::warning, "At least one item with no bounding box was found in BVH().");
 	}
 
 	box = surroundingBox(lBox, rBox);
@@ -109,7 +109,8 @@ __device__ bool BVH::boundingBox(AABB& b) const
 	return true;
 }
 
-//vvvvv deprecated: use thrust lib instead. vvvvv
+//vvvvv deprecated: use thrust lib instead. More efficient and easy to use. vvvvv
+[[deprecated]]
 __device__ void sortHittables(Hittable** list, int start, int stop)
 {
 	if (stop - start <= 1) return;
@@ -120,7 +121,7 @@ __device__ void sortHittables(Hittable** list, int start, int stop)
 		AABB cBox, pivitBox;
 		if (!list[i]->boundingBox(cBox) || !list[start]->boundingBox(pivitBox))
 		{
-			printf("No bb @ sort");
+			printMsg(LogLevel::warning, "At least one item with no bounding box was found in sortHittables().");
 		}
 		if (cBox.nearVec.e[0] - pivitBox.farVec.e[0] > 0.0)
 		{
@@ -128,7 +129,6 @@ __device__ void sortHittables(Hittable** list, int start, int stop)
 			list[largerEnd] = list[i];
 			list[i] = ptr;
 		}
-		printf("%d  ", cBox.nearVec.e[0]);
 	}
 
 	Hittable* ptr = list[largerEnd];
@@ -144,7 +144,7 @@ __device__ bool compareX(const Hittable* a, const Hittable* b)
 	AABB lBox, rBox;
 	if (!a->boundingBox(lBox) || !b->boundingBox(rBox))
 	{
-		printf("Warning: No Bounding box in constructor\n");
+		printMsg(LogLevel::warning, "At least one item with no bounding box was found in compareX().");
 	}
 	return (lBox.nearVec.e[0] < rBox.nearVec.e[0]);
 }
@@ -154,7 +154,7 @@ __device__ bool compareY(const Hittable* a, const Hittable* b)
 	AABB lBox, rBox;
 	if (!a->boundingBox(lBox) || !b->boundingBox(rBox))
 	{
-		printf("Warning: No Bounding box in constructor\n");
+		printMsg(LogLevel::warning, "At least one item with no bounding box was found in compareY().");
 	}
 	return (lBox.nearVec.e[1] < rBox.nearVec.e[1]);
 }
@@ -164,7 +164,7 @@ __device__ bool compareZ(const Hittable* a, const Hittable* b)
 	AABB lBox, rBox;
 	if (!a->boundingBox(lBox) || !b->boundingBox(rBox))
 	{
-		printf("Warning: No Bounding box in constructor\n");
+		printMsg(LogLevel::warning, "At least one item with no bounding box was found in compareZ().");
 	}
 	return (lBox.nearVec.e[2] < rBox.nearVec.e[2]);
 }
