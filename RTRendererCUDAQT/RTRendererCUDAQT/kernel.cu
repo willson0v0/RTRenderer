@@ -8,6 +8,7 @@
 #include <opencv/cv.hpp>
 #include <opencv2/photo/cuda.hpp>
 #include "cudaExamp.h"
+#include "cuda.h"
 #include "misc.h"
 #include "Vec3.h"
 #include <time.h>
@@ -19,6 +20,9 @@
 #include "Material.h"
 #include "Camera.h"
 #include "WorldGen.h"
+#include <thread>
+#include <chrono>
+#include <mutex>
 
 #include "RTRendererCUDAQT.h"
 #include <QtWidgets/QApplication>
@@ -143,14 +147,16 @@ __global__ void rander_init(curandState* randState)
 
 int main(int argc, char* argv[])
 {
+	StartTime = float(clock());
+	
+	printMsg(LogLevel::info, "???");
 	VTModeEnabled = enableVTMode();
 
-	clock_t clk;
-	clk = clock();
 	double renderTime;
 
 	printMsg(LogLevel::info, "Rendering a %d x %d image in %d x %d blocks", MAX_X, MAX_Y, BLK_X, BLK_Y);
 	printMsg(LogLevel::info, "SPP(per frame) = %d, depth = %d", SPP, ITER);
+	printMsg(LogLevel::info, "Current log level: %d", logLevel);
 
 	size_t* pValue = new size_t;
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
@@ -178,7 +184,7 @@ int main(int argc, char* argv[])
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitDevRuntimeSyncDepth));
 	printMsg(LogLevel::debug, "DevRuntimeSyncDepth: \t\t%zu .", *pValue);
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitDevRuntimePendingLaunchCount));
-	printMsg(LogLevel::debug, "DevRuntimePendingLaunchCount: \t%zu Byte.", *pValue);
+	printMsg(LogLevel::debug, "DevRuntimePendingLaunchCount: %zu Byte.", *pValue);
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitMaxL2FetchGranularity));
 	printMsg(LogLevel::debug, "MaxL2FetchGranularity: \t%zu Byte.", *pValue);
 
@@ -200,7 +206,7 @@ int main(int argc, char* argv[])
 	Camera** cudaCam;
 	checkCudaErrors(cudaMalloc((void**)&cudaCam, sizeof(Camera*)));
 
-	double ms = double(clock() - clk);
+	double ms = double(clock() - StartTime);
 	printMsg(LogLevel::info, "Alloc finished @ %lf ms", ms);
 
 	curandState* worldGenRandState;
@@ -210,6 +216,10 @@ int main(int argc, char* argv[])
 	if (em.rows < 1 || em.cols < 1)
 	{
 		printMsg(LogLevel::error, "Failed to find Earth texture(earthmap.jpg).");
+	}
+	else
+	{
+		printMsg(LogLevel::debug, "Texture loaded.");
 	}
 	unsigned char* t;
 	checkCudaErrors(cudaMalloc((void**)&t, sizeof(unsigned char) * em.rows * em.cols * 3));
@@ -224,7 +234,7 @@ int main(int argc, char* argv[])
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
 
-	ms = double(clock() - clk);
+	ms = double(clock() - StartTime);
 	printMsg(LogLevel::info, "World gen finished @ %lf ms", ms);
 
 	dim3 blocks(MAX_X / BLK_X + 1, MAX_Y / BLK_Y + 1);
@@ -236,20 +246,17 @@ int main(int argc, char* argv[])
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
 
-	ms = double(clock() - clk);
+	ms = double(clock() - StartTime);
 	double renderStart = ms;
 	printMsg(LogLevel::info, "Init renderer finished @ %lf ms", ms);
 
-	printMsg(LogLevel::info, "=================================================");
-	printMsg(LogLevel::info, "||Starting renderer, press q in prompt to quit.||");
-	printMsg(LogLevel::info, "=================================================\n");
-
-	printMsg(LogLevel::info, "\t\t+---------------+---------------+---------------+");
-	printMsg(LogLevel::info, "\t\t|   cur.\t|   avg.\t|  total\t|");
-	printMsg(LogLevel::info, "\t\t+---------------+---------------+---------------+");
-	printMsg(LogLevel::info, "");
-	printMsg(LogLevel::info, "\t\t+---------------+---------------+---------------+");
-	printf("\033[A\r");
+	printMsg(LogLevel::info, "\t+-------------------------------------------------------------------------------+");
+	printMsg(LogLevel::info, "\t|                 Starting renderer, press q in prompt to quit.                 |");
+	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+");
+	printMsg(LogLevel::info, "\t|      cur.     |      avg.     |     total     |      FPS      |      SPP      |");
+	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+");
+	printMsg(LogLevel::info, "\t|               |               |               |               |               |");
+	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+\033[A\r");
 
 	int frameCount = 0;
 	while (1)
@@ -261,17 +268,17 @@ int main(int argc, char* argv[])
 		checkCudaErrors(cudaGetLastError());
 		checkCudaErrors(cudaDeviceSynchronize());
 
-		ms = double(clock() - clk);
+		ms = double(clock() - StartTime);
 		renderTime = ms - renderTime;
 		clearLine();
-		printMsg(LogLevel::info, "Render Time:\t|%*.2lf \t|%*.2lf \t|%*.2lf\t|s, %.6lf fps, Current SPP: %d", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / frameCount, 7, (ms - renderStart) / 1000.0, 1000.0 * frameCount / (ms - renderStart),frameCount * SPP);
+		printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * frameCount / (ms - renderStart),7, frameCount * SPP);
 
 		M.data = (uchar*)frameBuffer;
 		cv::imshow("wow", M);
 		if (cv::waitKey(1) == 27) break;
 		if (_kbhit() && getch() == 'q') break;
 	}
-	printMsg(LogLevel::info, "\t\t+---------------+---------------+---------------+");
+	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+");
 
 	printMsg(LogLevel::debug, "Exec time: %lf ms. Saving result...", ms);
 

@@ -1,4 +1,5 @@
 #pragma once
+#include <ctime>
 
 #define ALLOWOUTOFBOUND
 #define ALLOWOVERFLOW
@@ -7,11 +8,12 @@
 
 enum class LogLevel
 {
-	fatal = 0x00,
-	error = 0x01,
+	fatal	= 0x00,
+	error	= 0x01,
 	warning = 0x02,
-	info = 0x03,
-	debug = 0x04
+	info	= 0x03,
+	debug	= 0x04,
+	extra	= 0x05
 };
 
 constexpr auto MAX_X = 1024;
@@ -30,3 +32,4 @@ constexpr auto ANSI_COLOR_CYAN = "\x1b[36m";
 constexpr auto ANSI_COLOR_RESET = "\x1b[0m";
 
 __device__ __managed__ bool VTModeEnabled = false;
+__device__ __managed__ clock_t StartTime;

@@ -93,13 +93,28 @@ __host__ inline double randD()
 template<typename... Arguments>
 __host__ __device__ void printMsg(LogLevel ll, const char* msg, Arguments... args)
 {
+#ifndef __CUDA_ARCH__
+	float currentTimeMs = clock() - StartTime;
+#else
+	float currentTimeMs = NAN;
+#endif // !__CUDA_ARCH__
+
 	switch (ll)
 	{
+	case LogLevel::extra:
+		if (logLevel >= LogLevel::extra)
+		{
+			if (VTModeEnabled) printf(ANSI_COLOR_CYAN);
+			printf("[ Extra\t] %*.2lf\t: ", 6, currentTimeMs / 1000.0);
+			printf(msg, args...);
+			printf("\n");
+		}
+		break;
 	case LogLevel::debug:
 		if (logLevel >= LogLevel::debug)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_GREEN);
-			printf("[Debug]: ");
+			printf("[ Debug\t] %*.2lf\t: ", 6, currentTimeMs / 1000.0);
 			printf(msg, args...);
 			printf("\n");
 		}
@@ -108,7 +123,7 @@ __host__ __device__ void printMsg(LogLevel ll, const char* msg, Arguments... arg
 		if (logLevel >= LogLevel::info)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_RESET);
-			printf("[Info]: ");
+			printf("[ Info\t] %*.2lf\t: ", 6, currentTimeMs / 1000.0);
 			printf(msg, args...);
 			printf("\n");
 		}
@@ -117,7 +132,7 @@ __host__ __device__ void printMsg(LogLevel ll, const char* msg, Arguments... arg
 		if (logLevel >= LogLevel::warning)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_YELLOW);
-			printf("[Warning]: ");
+			printf("[Warning] %*.2lf\t: ", 6, currentTimeMs / 1000.0);
 			printf(msg, args...);
 			printf("\n");
 		}
@@ -126,7 +141,7 @@ __host__ __device__ void printMsg(LogLevel ll, const char* msg, Arguments... arg
 		if (logLevel >= LogLevel::error)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_RED);
-			printf("[Error]: ");
+			printf("[ Error\t] %*.2lf\t: ", 6, currentTimeMs / 1000.0);
 			printf(msg, args...);
 			printf("\n");
 		}
@@ -135,7 +150,7 @@ __host__ __device__ void printMsg(LogLevel ll, const char* msg, Arguments... arg
 		if (logLevel >= LogLevel::fatal)
 		{
 			if (VTModeEnabled) printf(ANSI_COLOR_RED);
-			printf("[Fatal]: ");
+			printf("[ Fatal\t] %*.2lf\t: ", 6, currentTimeMs / 1000.0);
 			printf(msg, args...);
 			printf("\n");
 		}
@@ -163,7 +178,7 @@ __host__ bool enableVTMode()
 	DWORD dwMode = 0;
 	if (!GetConsoleMode(hOut, &dwMode))
 	{
-		printMsg(LogLevel::error, "Failed to set CMD to VT mode. ANSI color wont behave properly.");
+		printMsg(LogLevel::error, "Failed to get current CMD properties. ANSI color wont behave properly.");
 		return false;
 	}
 
@@ -182,14 +197,6 @@ __host__ void checkCuda(cudaError_t result, char const* const func, const char* 
 {
 	if (result)
 	{
-		/*
-		std::cerr
-			<< " CUDA ERROR: \r\n"
-			<< cudaGetErrorName(result) <<" : "<<cudaGetErrorString(result)
-			<< " @ " << file
-			<< " : " << line
-			<< " , " << func << std::endl;
-		*/
 		printMsg(LogLevel::fatal, "Cuda Error: \n %s (%s) @ %s: %d, %s\n",
 			cudaGetErrorName(result),
 			cudaGetErrorString(result),

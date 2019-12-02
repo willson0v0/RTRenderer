@@ -34,7 +34,6 @@ __device__ bool ConstantMedium::hit(const Ray& r, double tMin, double tMax, HitR
 			double distance = (rec2.t - rec1.t) * r.direction.length();
 			double hitAt = - (1/density) * log(curand_uniform(localRandState));
 
-
 			if (hitAt < distance)
 			{
 				rec.t = rec1.t + hitAt / r.direction.length();
