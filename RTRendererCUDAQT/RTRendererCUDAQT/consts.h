@@ -26,6 +26,7 @@ constexpr auto BLK_Y = 20;
 constexpr auto PI = 3.1415926535897932384626433832795;
 constexpr auto logLevel = LogLevel::info;
 
+
 constexpr auto ANSI_COLOR_RED = "\x1b[31m";
 constexpr auto ANSI_COLOR_GREEN = "\x1b[32m";
 constexpr auto ANSI_COLOR_YELLOW = "\x1b[33m";

@@ -8,11 +8,35 @@
 #include <qpushbutton.h>
 #include <qlabel.h>
 #include <qimage.h>
+#include "consts.h"
+#include <qthread.h>
 #include <QImage>
 #include <QPainter>
 
-//#include "consts.h"
-//#include "misc.h"
+
+extern void kernel();
+
+//合并的话会发生什么？
+
+class LoopThread : public QThread
+{
+	Q_OBJECT
+public:
+	LoopThread(QObject* parent = 0)
+		: QThread(parent)
+	{
+		;
+		}
+	void kernel();
+	int break_flag = 0;
+protected:
+	void run();
+
+signals:
+	void done();
+	void refresh_flag();
+};
+
 
 class RTRendererCUDAQT : public QMainWindow
 {
@@ -20,12 +44,18 @@ class RTRendererCUDAQT : public QMainWindow
 
 public:
 	RTRendererCUDAQT(QWidget* parent = Q_NULLPTR);
-	void kernel();
 	double clip_upperbound = 1;
+	LoopThread* looper;
+	
 public slots:
 	void SlotTest();
+	void refresh();
+	void Stop();
+	
 private:
 	QPushButton* pb;
+	QPushButton* stop_pb;
 	QLabel* lab;
 	Ui::RTRendererCUDAQTClass ui;
 };
+

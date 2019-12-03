@@ -34,6 +34,8 @@
 
 #define ALLOWOUTOFBOUND
 
+
+
 constexpr auto ITER = 50;
 constexpr auto SPP = 4;
 
@@ -154,7 +156,17 @@ int main(int argc, char* argv[])
 	a.exec();
 }
 
-void RTRendererCUDAQT::kernel()
+void RTRendererCUDAQT::refresh()
+{
+	QImage image(ppm, MAX_X, MAX_Y, MAX_X * 3, QImage::Format_RGB888);
+	image.rgbSwapped();
+	lab->clear();
+	lab->setPixmap(QPixmap::fromImage(image));
+	lab->repaint();
+}
+
+
+void LoopThread::kernel()
 {
 	//system("cls");
 	double renderTime;
@@ -200,11 +212,6 @@ void RTRendererCUDAQT::kernel()
 #endif
 
 	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
-	//CV_64FC3  64位float 3通道
-	//Scalar初始化，三个通道的初值都是0
-	//矩阵  uchar* 就是矩阵
-	//后面应该是换成8UC3了.uchar == 8U , frameBuffer是C3
-	//原来问题是浮点数吗
 
 	unsigned char* convert = new unsigned char[MAX_X * MAX_Y * 3 + 10000];
 
@@ -302,12 +309,16 @@ void RTRendererCUDAQT::kernel()
 			else
 				convert[i] = frameBuffer[i] * 255.99;
 		}
+		
+		emit refresh_flag();
 
-		QImage image(convert,MAX_X,MAX_Y,MAX_X*3,QImage::Format_RGB888);
-		image.rgbSwapped();
-		lab->clear();
-		lab->setPixmap(QPixmap::fromImage(image));
-		lab->repaint();
+		if (this->break_flag == 1)
+		{
+			this->break_flag = 0;
+			break;
+		}
+
+		
 	}
 	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+");
 
