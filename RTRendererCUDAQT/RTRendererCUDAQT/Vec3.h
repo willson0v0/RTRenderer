@@ -193,9 +193,16 @@ __host__ __device__ inline void Vec3::writeFrameBuffer(int i, int j, double* fBu
 {
 	int index = (MAX_Y - j - 1) * MAX_X * 3 + i * 3; // Find location in frame buffer.
 
+	/*
 	fBuffer[index] = e[2];
 	fBuffer[index + 1] = e[1];
 	fBuffer[index + 2] = e[0];
+	*/
+	
+	fBuffer[index] = e[0];
+	fBuffer[index + 1] = e[1];
+	fBuffer[index + 2] = e[2];
+	
 }
 
 __host__ __device__ inline void Vec3::readFrameBuffer(int i, int j, double* fBuffer)

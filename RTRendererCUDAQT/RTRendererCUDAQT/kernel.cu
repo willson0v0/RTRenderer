@@ -21,6 +21,15 @@
 #include "RTRendererCUDAQT.h"
 #include <QtWidgets/QApplication>
 
+
+
+#include <QtCore/QDebug>
+#include <QtGui/QImage>
+#include "opencv2/core/core.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/opencv.hpp"
+
+
 #define ALLOWOUTOFBOUND
 
 #define DARKSCENE
@@ -28,15 +37,7 @@
 constexpr auto ITER = 50;
 constexpr auto SPP = 4;
 
-__global__ void cuHelloWorld()
-{
-	printf("Hello world");
-}
 
-extern "C" void launchKernal()
-{
-	cuHelloWorld <<<1, 1 >>> ();
-}
 
 __device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState)
 {
@@ -72,8 +73,9 @@ __device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState
 }
 
 // Main rander func.
-__global__ void render(int frameCount, double* fBuffer, Camera** cam, Hittable** world, curandState* randState)  //{b, g, r}, stupid opencv
+__global__ void renderer(int frameCount, double* fBuffer, Camera** cam, Hittable** world, curandState* randState)  //{b, g, r}, stupid opencv
 {
+	
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 	int j = threadIdx.y + blockIdx.y * blockDim.y;
 
@@ -116,8 +118,25 @@ __global__ void rander_init(curandState* randState)
 	curand_init(2019+pixel_index, 0, 0, &randState[pixel_index]);
 }
 
+void func()
+{
+	;
+}
+
+unsigned char* ppm = new unsigned char [MAX_X * MAX_Y * 3 + 10000];
+
+
 int main(int argc, char* argv[])
 {
+	QApplication a(argc, argv);
+	RTRendererCUDAQT window;
+	window.show();
+	a.exec();
+}
+
+void RTRendererCUDAQT::kernel()
+{
+	func();
 	clock_t clk;
 	clk = clock();
 	double renderTime;
@@ -130,10 +149,17 @@ int main(int argc, char* argv[])
 #endif
 
 	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
+	//CV_64FC3  64位float 3通道
+	//Scalar初始化，三个通道的初值都是0
+	//矩阵  uchar* 就是矩阵
+	//后面应该是换成8UC3了.uchar == 8U , frameBuffer是C3
+	//原来问题是浮点数吗
 
 	size_t frameBufferSize = 3 * MAX_X * MAX_Y * sizeof(double);
 	double* frameBuffer;
 	checkCudaErrors(cudaMallocManaged((void**)&frameBuffer, frameBufferSize));
+
+	unsigned char convert[3 * MAX_X * MAX_Y * sizeof(unsigned char)];
 
 	Hittable** cudaList;
 	int num_Hittables = 500;
@@ -176,32 +202,50 @@ int main(int argc, char* argv[])
 	std::cout << "init rander \t@ t+ " << ms << " ms.\r\n";
 
 	int frameCount = 0;
-
+	
 	while (1)
 	{
 		renderTime = ms;
 
-		render <<<blocks, threads >>> (frameCount++, frameBuffer, cudaCam, cudaWorld, renderRandomStates);
+		renderer <<<blocks, threads >>> (frameCount++, frameBuffer, cudaCam, cudaWorld, renderRandomStates);
 
-		checkCudaErrors(cudaGetLastError());
-		checkCudaErrors(cudaDeviceSynchronize());
+
+		checkCudaErrors(cudaGetLastError());																											checkCudaErrors(cudaDeviceSynchronize());
 
 		ms = double(clock() - clk);
 		renderTime = ms - renderTime;
 		std::cout << "Render Time: " << renderTime/1000.0 << "\t/" << ms/1000.0 << "\ts, current SPP = " << frameCount * SPP << "\r\n";
-
+		
+		/*
 		M.data = (uchar*)frameBuffer;
 		cv::imshow("wow", M);
-		if (cv::waitKey(1) == 27) break;
+		if (cv::waitKey(1) == 27) break;;
+		*/
+		
+		
+		for (int i = 0; i < 3 * MAX_X * MAX_Y; i++)
+		{
+			if (frameBuffer[i] >= 1)
+				convert[i] = 255;
+			else
+				convert[i] = frameBuffer[i] * 256;
+		}
+
+		QImage image(convert,MAX_X,MAX_Y,MAX_X*3,QImage::Format_RGB888);
+		image.rgbSwapped();
+		lab->clear();
+		lab->setPixmap(QPixmap::fromImage(image));
+		lab->repaint();
+
+		
 	}
+	
 
 
 	ms = double(clock() - clk);
 	std::cout << "Exec time:\t" << ms << " ms.\r\nRender Time:\t" << renderTime << "ms\r\nExpected FPS:\t" << 1000.00 / renderTime;
-
+	
 
 	cudaDeviceReset();
 
-    return 0;
 }
-
