@@ -4,25 +4,23 @@
 
 __device__ inline double trilinearInterpolate(Vec3 c[2][2][2], double u, double v, double w);
 
+__device__ int xPermute[256];
+__device__ int yPermute[256];
+__device__ int zPermute[256];
 __device__ Vec3* randVec;
-__device__ int* xPermute;
-__device__ int* yPermute;
-__device__ int* zPermute;
 
 
 #define RND (curand_uniform(localRandState))
-__device__ static Vec3* generatePerlin(curandState* localRandState)
+__device__ static void generatePerlin(curandState* localRandState)
 {
-	Vec3* p = new Vec3[256];
+	randVec = new Vec3[256];
 	for (int i = 0; i < 256; i++)
 	{
-		p[i] = Vec3(RND, RND, RND);
-		p[i] *= 2;
-		p[i] -= Vec3(1, 1, 1);
-		p[i].makeUnitVector();
+		randVec[i] = Vec3(RND, RND, RND);
+		randVec[i] *= 2;
+		randVec[i] -= Vec3(1, 1, 1);
+		randVec[i].makeUnitVector();
 	}
-
-	return p;
 }
 
 __device__ void permute(int* p, int n, curandState* localRandState)
@@ -37,15 +35,25 @@ __device__ void permute(int* p, int n, curandState* localRandState)
 	return;
 }
 
-__device__ static int* perlinGeneratePermute(curandState* localRandState)
+__device__ static void perlinGeneratePermute(curandState* localRandState)
 {
-	int* p = new int[256];
 	for (int i = 0; i < 256; i++)
 	{
-		p[i] = i;
+		xPermute[i] = i;
+		yPermute[i] = i;
+		zPermute[i] = i;
 	}
-	permute(p, 256, localRandState);
-	return p;
+	permute(xPermute, 256, localRandState);
+	permute(yPermute, 256, localRandState);
+	permute(zPermute, 256, localRandState);
+}
+
+__device__ static void initPerlin(curandState* localRandState)
+{
+	curandState rs = *localRandState;
+	generatePerlin(localRandState);
+	perlinGeneratePermute(localRandState);
+	*localRandState = rs;
 }
 
 __device__ inline double trilinearInterpolate(Vec3 c[2][2][2], double u, double v, double w)
@@ -120,14 +128,5 @@ public:
 		}
 		return fabs(accum);
 	}
-
-	__device__ static void initPerlin(curandState* localRandState)
-	{
-		curandState rs = *localRandState;
-		randVec = generatePerlin(localRandState);
-		xPermute = perlinGeneratePermute(localRandState);
-		yPermute = perlinGeneratePermute(localRandState);
-		zPermute = perlinGeneratePermute(localRandState);
-		*localRandState = rs;
-	}
 };
+

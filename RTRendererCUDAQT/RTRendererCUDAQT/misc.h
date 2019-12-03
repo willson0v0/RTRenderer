@@ -9,12 +9,16 @@
 #include <random>
 #include "Vec3.h"
 #include <opencv/cv.hpp>
+#include <stdio.h>
+#include <stdarg.h>
+#include <Windows.h>
 
-__device__ double ffmin(double a, double b)
+
+__device__ __host__ double ffmin(double a, double b)
 {
 	return a < b ? a : b;
 }
-__device__ double ffmax(double a, double b)
+__device__ __host__ double ffmax(double a, double b)
 {
 	return a > b ? a : b;
 }
@@ -24,23 +28,6 @@ __device__ double ffmax(double a, double b)
 #define checkCudaErrors(val) checkCuda((val), #val, __FILE__, __LINE__);
 //										^				^
 //									  func			file name
-
-// DON'T CALL THIS! Use marco to auto generate msgs.
-void checkCuda(cudaError_t result, char const* const func, const char* const file, int const line)
-{
-	if (result)
-	{
-		std::cerr 
-			<< " CUDA ERROR: \r\n" 
-			<< cudaGetErrorName(result) <<" : "<<cudaGetErrorString(result)
-			<< " @ " << file 
-			<< " : " << line 
-			<< " , " << func << std::endl;
-		cudaDeviceReset();
-		system("pause");
-		exit(-1);
-	}
-}
 
 __device__ void getSphereUV(const Vec3& p, double& u, double& v)
 {
@@ -101,4 +88,123 @@ __host__ inline double randD()
 	static std::function<double()> rand_generator =
 		std::bind(distribution, generator);
 	return rand_generator();
+}
+
+template<typename... Arguments>
+__host__ __device__ void printMsg(LogLevel ll, const char* msg, Arguments... args)
+{
+#ifndef __CUDA_ARCH__
+	float currentTimeMs = clock() - StartTime;
+#else
+	float currentTimeMs = NAN;
+#endif // !__CUDA_ARCH__
+
+	switch (ll)
+	{
+	case LogLevel::extra:
+		if (logLevel >= LogLevel::extra)
+		{
+			if (VTModeEnabled) printf(ANSI_COLOR_CYAN);
+			printf("[ Extra\t] %*.2lf\t: ", 6, currentTimeMs / 1000.0);
+			printf(msg, args...);
+			printf("\n");
+		}
+		break;
+	case LogLevel::debug:
+		if (logLevel >= LogLevel::debug)
+		{
+			if (VTModeEnabled) printf(ANSI_COLOR_GREEN);
+			printf("[ Debug\t] %*.2lf\t: ", 6, currentTimeMs / 1000.0);
+			printf(msg, args...);
+			printf("\n");
+		}
+		break;
+	case LogLevel::info:
+		if (logLevel >= LogLevel::info)
+		{
+			if (VTModeEnabled) printf(ANSI_COLOR_RESET);
+			printf("[ Info\t] %*.2lf\t: ", 6, currentTimeMs / 1000.0);
+			printf(msg, args...);
+			printf("\n");
+		}
+		break;
+	case LogLevel::warning:
+		if (logLevel >= LogLevel::warning)
+		{
+			if (VTModeEnabled) printf(ANSI_COLOR_YELLOW);
+			printf("[Warning] %*.2lf\t: ", 6, currentTimeMs / 1000.0);
+			printf(msg, args...);
+			printf("\n");
+		}
+		break;
+	case LogLevel::error:
+		if (logLevel >= LogLevel::error)
+		{
+			if (VTModeEnabled) printf(ANSI_COLOR_RED);
+			printf("[ Error\t] %*.2lf\t: ", 6, currentTimeMs / 1000.0);
+			printf(msg, args...);
+			printf("\n");
+		}
+		break;
+	case LogLevel::fatal:
+		if (logLevel >= LogLevel::fatal)
+		{
+			if (VTModeEnabled) printf(ANSI_COLOR_RED);
+			printf("[ Fatal\t] %*.2lf\t: ", 6, currentTimeMs / 1000.0);
+			printf(msg, args...);
+			printf("\n");
+		}
+		break;
+	default:
+		break;
+	}
+	if (VTModeEnabled) printf(ANSI_COLOR_RESET);
+}
+
+__host__ __device__ void clearLine()
+{
+	printf("\033[A\033[2K\r");
+}
+
+__host__ bool enableVTMode()
+{
+	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (hOut == INVALID_HANDLE_VALUE)
+	{
+		printMsg(LogLevel::error, "Failed to get STD_OUTPUT_HANDLE. ANSI color wont behave properly.");
+		return false;
+	}
+
+	DWORD dwMode = 0;
+	if (!GetConsoleMode(hOut, &dwMode))
+	{
+		printMsg(LogLevel::error, "Failed to get current CMD properties. ANSI color wont behave properly.");
+		return false;
+	}
+
+	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+	if (!SetConsoleMode(hOut, dwMode))
+	{
+		printMsg(LogLevel::error, "Failed to set CMD to VT mode. ANSI color wont behave properly.");
+		return false;
+	}
+	printMsg(LogLevel::info, "Set CMD to VT mode.");
+	return true;
+}
+
+// DON'T CALL THIS! Use marco to auto generate msgs.
+__host__ void checkCuda(cudaError_t result, char const* const func, const char* const file, int const line)
+{
+	if (result)
+	{
+		printMsg(LogLevel::fatal, "Cuda Error: \n %s (%s) @ %s: %d, %s\n",
+			cudaGetErrorName(result),
+			cudaGetErrorString(result),
+			file,
+			line,
+			func);
+		cudaDeviceReset();
+		system("pause");
+		exit(-1);
+	}
 }

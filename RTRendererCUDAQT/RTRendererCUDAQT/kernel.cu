@@ -3,9 +3,12 @@
 #include "device_launch_parameters.h"
 
 #include <iostream>
+#include <iomanip>
+#include <conio.h>
 #include <opencv/cv.hpp>
 #include <opencv2/photo/cuda.hpp>
 #include "cudaExamp.h"
+#include "cuda.h"
 #include "misc.h"
 #include "Vec3.h"
 #include <time.h>
@@ -17,6 +20,9 @@
 #include "Material.h"
 #include "Camera.h"
 #include "WorldGen.h"
+#include <thread>
+#include <chrono>
+#include <mutex>
 
 #include "RTRendererCUDAQT.h"
 #include <QtWidgets/QApplication>
@@ -32,12 +38,36 @@
 
 #define ALLOWOUTOFBOUND
 
-#define DARKSCENE
-
 constexpr auto ITER = 50;
 constexpr auto SPP = 4;
 
 
+
+__device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* localRandState)
+{
+	HitRecord rec;
+	if ((*world)->hit(r, 0.000001, FLT_MAX, rec, localRandState)) {
+		Ray scattered;
+		Vec3 attenuation;
+		Vec3 emitted = rec.matPtr->emitted(rec.u, rec.v, rec.point);
+		if (depth < ITER && rec.matPtr->scatter(r, rec, attenuation, scattered, localRandState)) {
+			return emitted + attenuation * color(scattered, world, depth + 1, localRandState);
+		}
+		else {
+			return emitted;
+		}
+	}
+	else {
+#ifdef DARKSCENE
+		Vec3 c(0, 0, 0);
+#else
+		Vec3 unit_direction = unitVector(cur_ray.direction);
+		double t = 0.5f * (unit_direction.e[1] + 1.0f);
+		Vec3 c = (1.0f - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
+#endif
+		return c;
+	}
+}
 
 __device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState)
 {
@@ -45,7 +75,7 @@ __device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState
 	Vec3 cur_attenuation = Vec3(1.0, 1.0, 1.0);
 	for (int i = 0; i < ITER; i++) {
 		HitRecord rec;
-		if ((*world)->hit(cur_ray, 0.001, FLT_MAX, rec)) {
+		if ((*world)->hit(cur_ray, 0.001, FLT_MAX, rec, localRandState)) {
 			Ray scattered;
 			Vec3 attenuation;
 			Vec3 emitted = rec.matPtr->emitted(rec.u, rec.v, rec.point);
@@ -55,7 +85,7 @@ __device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState
 				cur_ray = scattered;
 			}
 			else {
-				return cur_attenuation + emitted;
+				return cur_attenuation * emitted;
 			}
 		}
 		else {
@@ -101,7 +131,7 @@ __global__ void renderer(int frameCount, double* fBuffer, Camera** cam, Hittable
 	}
 	randState[index] = localRandState;
 	pixel /= double(SPP);
-	pixel /= frameCount + 1;
+	pixel /= frameCount + 1.0;
 	pixel.e[0] = sqrt(pixel.e[0]);
 	pixel.e[1] = sqrt(pixel.e[1]);
 	pixel.e[2] = sqrt(pixel.e[2]);
@@ -141,11 +171,42 @@ void RTRendererCUDAQT::kernel()
 	clk = clock();
 	double renderTime;
 
-	std::cout << "Rendering a " << MAX_X << "x" << MAX_Y << " image ";
-	std::cout << "in " << BLK_X << "x" << BLK_Y << " blocks, SPP = " <<SPP<<" & depth = "<<ITER<<"\n";
+	printMsg(LogLevel::info, "Rendering a %d x %d image in %d x %d blocks", MAX_X, MAX_Y, BLK_X, BLK_Y);
+	printMsg(LogLevel::info, "SPP(per frame) = %d, depth = %d", SPP, ITER);
+	printMsg(LogLevel::info, "Current log level: %d", logLevel);
+
+	size_t* pValue = new size_t;
+	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
+	printMsg(LogLevel::debug, "Stack size limit: \t\t%zu Byte.", *pValue);
+
+	if (*pValue < 65536)
+	{
+		printMsg(LogLevel::warning, "Stack size too small(%zu Byte), Resizing to 65536...", *pValue);
+		checkCudaErrors(cudaDeviceSetLimit(cudaLimitStackSize, 65536));
+		checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
+		printMsg(LogLevel::debug, "Stack size limit: \t\t%zu Byte.", *pValue);
+		if (*pValue < 65535)
+		{
+			printMsg(LogLevel::fatal, "Stack resized failed. Quit now.");
+			cudaDeviceReset();
+			system("pause");
+			exit(-1);
+		}
+	}
+
+	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitPrintfFifoSize));
+	printMsg(LogLevel::debug, "Printf FIFO size: \t\t%zu Byte.", *pValue);
+	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitMallocHeapSize));
+	printMsg(LogLevel::debug, "Heap size limit: \t\t%zu Byte.", *pValue);
+	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitDevRuntimeSyncDepth));
+	printMsg(LogLevel::debug, "DevRuntimeSyncDepth: \t\t%zu .", *pValue);
+	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitDevRuntimePendingLaunchCount));
+	printMsg(LogLevel::debug, "DevRuntimePendingLaunchCount: %zu Byte.", *pValue);
+	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitMaxL2FetchGranularity));
+	printMsg(LogLevel::debug, "MaxL2FetchGranularity: \t%zu Byte.", *pValue);
 
 #ifdef _DEBUG
-	std::cout << "Warning: Compiled in debug mode and it hurt performance.\n";
+	printMsg(LogLevel::warning, "Compiled under debug mode. Performance is compromised.");
 #endif
 
 	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
@@ -169,25 +230,36 @@ void RTRendererCUDAQT::kernel()
 	Camera** cudaCam;
 	checkCudaErrors(cudaMalloc((void**)&cudaCam, sizeof(Camera*)));
 
-	double ms = double(clock() - clk);
-	std::cout << "Alloc \t\t@ t+ " << ms << " ms.\r\n";
+	double ms = double(clock() - StartTime);
+	printMsg(LogLevel::info, "Alloc finished @ %lf ms", ms);
 
 	curandState* worldGenRandState;
 	checkCudaErrors(cudaMalloc((void**)&worldGenRandState, sizeof(curandState)));
 
 	cv::Mat em = cv::imread("earthmap.jpg");
+	if (em.rows < 1 || em.cols < 1)
+	{
+		printMsg(LogLevel::error, "Failed to find Earth texture(earthmap.jpg).");
+	}
+	else
+	{
+		printMsg(LogLevel::debug, "Texture loaded.");
+	}
 	unsigned char* t;
 	checkCudaErrors(cudaMalloc((void**)&t, sizeof(unsigned char) * em.rows * em.cols * 3));
 	checkCudaErrors(cudaMemcpy(t, em.data, sizeof(unsigned char) * em.rows * em.cols * 3, cudaMemcpyHostToDevice));
 
 	createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState);
-	//createWorld1 <<<1, 1 >>> (cudaList, cudaWorld, cudaCam);
+	// createWorld1 <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	// createCheckerTest <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	// createCornellBox << <1, 1 >> > (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	// createCornellSmoke <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
 
-	ms = double(clock() - clk);
-	std::cout << "WorldGen \t@ t+ " << ms << " ms.\r\n";
+	ms = double(clock() - StartTime);
+	printMsg(LogLevel::info, "World gen finished @ %lf ms", ms);
 
 	dim3 blocks(MAX_X / BLK_X + 1, MAX_Y / BLK_Y + 1);
 	dim3 threads(BLK_X, BLK_Y);
@@ -198,11 +270,19 @@ void RTRendererCUDAQT::kernel()
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
 
-	ms = double(clock() - clk);
-	std::cout << "init rander \t@ t+ " << ms << " ms.\r\n";
+	ms = double(clock() - StartTime);
+	double renderStart = ms;
+	printMsg(LogLevel::info, "Init renderer finished @ %lf ms", ms);
+
+	printMsg(LogLevel::info, "\t+-------------------------------------------------------------------------------+");
+	printMsg(LogLevel::info, "\t|                 Starting renderer, press q in prompt to quit.                 |");
+	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+");
+	printMsg(LogLevel::info, "\t|      cur.     |      avg.     |     total     |      FPS      |      SPP      |");
+	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+");
+	printMsg(LogLevel::info, "\t|               |               |               |               |               |");
+	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+\033[A\r");
 
 	int frameCount = 0;
-	
 	while (1)
 	{
 		renderTime = ms;
@@ -212,11 +292,11 @@ void RTRendererCUDAQT::kernel()
 
 		checkCudaErrors(cudaGetLastError());																											checkCudaErrors(cudaDeviceSynchronize());
 
-		ms = double(clock() - clk);
+		ms = double(clock() - StartTime);
 		renderTime = ms - renderTime;
-		std::cout << "Render Time: " << renderTime/1000.0 << "\t/" << ms/1000.0 << "\ts, current SPP = " << frameCount * SPP << "\r\n";
-		
-		/*
+		clearLine();
+		printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * frameCount / (ms - renderStart),7, frameCount * SPP);
+
 		M.data = (uchar*)frameBuffer;
 		cv::imshow("wow", M);
 		if (cv::waitKey(1) == 27) break;;
@@ -239,13 +319,20 @@ void RTRendererCUDAQT::kernel()
 
 		
 	}
-	
+	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+");
 
+	printMsg(LogLevel::debug, "Exec time: %lf ms. Saving result...", ms);
 
-	ms = double(clock() - clk);
-	std::cout << "Exec time:\t" << ms << " ms.\r\nRender Time:\t" << renderTime << "ms\r\nExpected FPS:\t" << 1000.00 / renderTime;
-	
+	const char* fileName = "result.png";
+	cv::Mat output;
+	M *= 255.99;
+	M.convertTo(output, CV_8UC3);
+	cv::imwrite(fileName, output);
 
-	cudaDeviceReset();
+	printMsg(LogLevel::info, "File saved at: \"%s\"", fileName);
+	checkCudaErrors(cudaDeviceReset());
+	printMsg(LogLevel::debug, "Device reset finished.");
+
+	system("Pause");
 
 }
