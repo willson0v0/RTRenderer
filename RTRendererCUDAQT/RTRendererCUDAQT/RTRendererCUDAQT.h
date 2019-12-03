@@ -8,7 +8,6 @@
 #include <qpushbutton.h>
 #include <qlabel.h>
 #include <qimage.h>
-#include "consts.h"
 #include <qthread.h>
 #include <QImage>
 #include <QPainter>

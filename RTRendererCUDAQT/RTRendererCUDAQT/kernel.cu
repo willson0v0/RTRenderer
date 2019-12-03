@@ -34,10 +34,10 @@
 
 #define ALLOWOUTOFBOUND
 
-
-
 constexpr auto ITER = 50;
 constexpr auto SPP = 4;
+
+unsigned char* ppm = new unsigned char[MAX_X * MAX_Y * 3 + 10000];
 
 __device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* localRandState)
 {
@@ -213,7 +213,6 @@ void LoopThread::kernel()
 
 	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
 
-	unsigned char* convert = new unsigned char[MAX_X * MAX_Y * 3 + 10000];
 
 	size_t frameBufferSize = 3 * MAX_X * MAX_Y * sizeof(double);
 	double* frameBuffer;
@@ -305,9 +304,9 @@ void LoopThread::kernel()
 		for (int i = 0; i < 3 * MAX_X * MAX_Y; i++)
 		{
 			if (frameBuffer[i] >= 1)
-				convert[i] = 255;
+				ppm[i] = 255;
 			else
-				convert[i] = frameBuffer[i] * 255.99;
+				ppm[i] = frameBuffer[i] * 255.99;
 		}
 		
 		emit refresh_flag();
