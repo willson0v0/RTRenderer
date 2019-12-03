@@ -119,9 +119,9 @@ public:
 class DiffuseLight : public Material
 {
 public:
-	Texture* emit;
+	Texture* emitTexture;
 
-	__device__ DiffuseLight(Texture* a) : emit(a) {}
+	__device__ DiffuseLight(Texture* a) : emitTexture(a) {}
 
 	__device__ virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered, curandState* localRandState) const
 	{
@@ -130,7 +130,7 @@ public:
 
 	__device__ virtual Vec3 emitted(double u, double v, const Vec3& point) const
 	{
-		return emit->value(u, v, point);
+		return emitTexture->value(u, v, point);
 	}
 };
 

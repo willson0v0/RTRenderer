@@ -1,5 +1,8 @@
 #pragma once
 #include <ctime>
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+#include <curand_kernel.h>
 
 #define ALLOWOUTOFBOUND
 #define ALLOWOVERFLOW
@@ -18,12 +21,10 @@ enum class LogLevel
 
 constexpr auto MAX_X = 1024;
 constexpr auto MAX_Y = 768;
-//constexpr auto MAX_X = 300;
-//constexpr auto MAX_Y = 200;
 constexpr auto BLK_X = 25;
 constexpr auto BLK_Y = 20;
 constexpr auto PI = 3.1415926535897932384626433832795;
-constexpr auto logLevel = LogLevel::debug;
+constexpr auto logLevel = LogLevel::info;
 
 constexpr auto ANSI_COLOR_RED = "\x1b[31m";
 constexpr auto ANSI_COLOR_GREEN = "\x1b[32m";

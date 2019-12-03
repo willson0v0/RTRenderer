@@ -7,12 +7,12 @@
 #include <math.h>
 #include <functional>
 #include <random>
-#include "Vec3.h"
 #include <opencv/cv.hpp>
 #include <stdio.h>
 #include <stdarg.h>
 #include <Windows.h>
 
+#include "Vec3.h"
 
 __device__ __host__ double ffmin(double a, double b)
 {
@@ -189,6 +189,7 @@ __host__ bool enableVTMode()
 		return false;
 	}
 	printMsg(LogLevel::info, "Set CMD to VT mode.");
+	VTModeEnabled = true;
 	return true;
 }
 

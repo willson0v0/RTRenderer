@@ -1,18 +1,29 @@
-
+#include "cuda.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
 #include <iostream>
 #include <iomanip>
 #include <conio.h>
-#include <opencv/cv.hpp>
-#include <opencv2/photo/cuda.hpp>
-#include "cudaExamp.h"
-#include "cuda.h"
-#include "misc.h"
-#include "Vec3.h"
 #include <time.h>
+#include <conio.h>
+#include <thread>
+#include <chrono>
+#include <mutex>
 
+#include <QtCore/QDebug>
+#include <QtGui/QImage>
+#include <QtWidgets/QApplication>
+
+#include "opencv2/core/core.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/opencv.hpp"
+#include <opencv/cv.hpp>
+
+#include "consts.h"
+#include "Vec3.h"
+#include "misc.h"
+#include "RTRendererCUDAQT.h"
 #include "Ray.h"
 #include "Sphere.h"
 #include "Hittable.h"
@@ -20,28 +31,11 @@
 #include "Material.h"
 #include "Camera.h"
 #include "WorldGen.h"
-#include <thread>
-#include <chrono>
-#include <mutex>
-
-#include "RTRendererCUDAQT.h"
-#include <QtWidgets/QApplication>
-
-
-
-#include <QtCore/QDebug>
-#include <QtGui/QImage>
-#include "opencv2/core/core.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/opencv.hpp"
-
 
 #define ALLOWOUTOFBOUND
 
 constexpr auto ITER = 50;
 constexpr auto SPP = 4;
-
-
 
 __device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* localRandState)
 {
@@ -148,16 +142,12 @@ __global__ void rander_init(curandState* randState)
 	curand_init(2019+pixel_index, 0, 0, &randState[pixel_index]);
 }
 
-void func()
-{
-	;
-}
-
-unsigned char* ppm = new unsigned char [MAX_X * MAX_Y * 3 + 10000];
-
-
 int main(int argc, char* argv[])
 {
+	StartTime = clock();
+	enableVTMode();
+	printMsg(LogLevel::info, "Ray Tracer Started. Waiting to start...");
+	QCoreApplication::addLibraryPath(".");
 	QApplication a(argc, argv);
 	RTRendererCUDAQT window;
 	window.show();
@@ -166,15 +156,15 @@ int main(int argc, char* argv[])
 
 void RTRendererCUDAQT::kernel()
 {
-	func();
-	clock_t clk;
-	clk = clock();
+	//system("cls");
 	double renderTime;
 
 	printMsg(LogLevel::info, "Rendering a %d x %d image in %d x %d blocks", MAX_X, MAX_Y, BLK_X, BLK_Y);
 	printMsg(LogLevel::info, "SPP(per frame) = %d, depth = %d", SPP, ITER);
 	printMsg(LogLevel::info, "Current log level: %d", logLevel);
 
+
+	printMsg(LogLevel::debug, "Performing GPU limit check");
 	size_t* pValue = new size_t;
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
 	printMsg(LogLevel::debug, "Stack size limit: \t\t%zu Byte.", *pValue);
@@ -216,11 +206,11 @@ void RTRendererCUDAQT::kernel()
 	//后面应该是换成8UC3了.uchar == 8U , frameBuffer是C3
 	//原来问题是浮点数吗
 
+	unsigned char* convert = new unsigned char[MAX_X * MAX_Y * 3 + 10000];
+
 	size_t frameBufferSize = 3 * MAX_X * MAX_Y * sizeof(double);
 	double* frameBuffer;
 	checkCudaErrors(cudaMallocManaged((void**)&frameBuffer, frameBufferSize));
-
-	unsigned char convert[3 * MAX_X * MAX_Y * sizeof(unsigned char)];
 
 	Hittable** cudaList;
 	int num_Hittables = 500;
@@ -290,7 +280,8 @@ void RTRendererCUDAQT::kernel()
 		renderer <<<blocks, threads >>> (frameCount++, frameBuffer, cudaCam, cudaWorld, renderRandomStates);
 
 
-		checkCudaErrors(cudaGetLastError());																											checkCudaErrors(cudaDeviceSynchronize());
+		checkCudaErrors(cudaGetLastError());
+		checkCudaErrors(cudaDeviceSynchronize());
 
 		ms = double(clock() - StartTime);
 		renderTime = ms - renderTime;
@@ -299,16 +290,17 @@ void RTRendererCUDAQT::kernel()
 
 		M.data = (uchar*)frameBuffer;
 		cv::imshow("wow", M);
-		if (cv::waitKey(1) == 27) break;;
-		*/
-		
-		
+		if (cv::waitKey(1) == 27) break;
+
+		if (_kbhit()) if (getch() == 'q') break;
+
+#pragma omp parallel for
 		for (int i = 0; i < 3 * MAX_X * MAX_Y; i++)
 		{
 			if (frameBuffer[i] >= 1)
 				convert[i] = 255;
 			else
-				convert[i] = frameBuffer[i] * 256;
+				convert[i] = frameBuffer[i] * 255.99;
 		}
 
 		QImage image(convert,MAX_X,MAX_Y,MAX_X*3,QImage::Format_RGB888);
@@ -316,8 +308,6 @@ void RTRendererCUDAQT::kernel()
 		lab->clear();
 		lab->setPixmap(QPixmap::fromImage(image));
 		lab->repaint();
-
-		
 	}
 	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+");
 
@@ -334,5 +324,5 @@ void RTRendererCUDAQT::kernel()
 	printMsg(LogLevel::debug, "Device reset finished.");
 
 	system("Pause");
-
+	exit(0);
 }

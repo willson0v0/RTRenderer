@@ -1,11 +1,6 @@
 #include "RTRendererCUDAQT.h"
-#include <QImage>
-#include <QPainter>
-#include "ui_RTRendererCUDAQT.h"
-#include <QtWidgets/QApplication>
 #include "consts.h"
-
-
+//#include "misc.h"
 
 RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 	: QMainWindow(parent)

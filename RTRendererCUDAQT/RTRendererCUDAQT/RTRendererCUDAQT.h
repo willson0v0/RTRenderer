@@ -1,17 +1,18 @@
 #pragma once
 
 #include <QtWidgets/QMainWindow>
+#include <QtWidgets/QApplication>
 #include "ui_RTRendererCUDAQT.h"
 #include <qwidget.h>
 #include <qlineedit.h>
 #include <qpushbutton.h>
 #include <qlabel.h>
 #include <qimage.h>
-#include "consts.h"
+#include <QImage>
+#include <QPainter>
 
-
-
-extern void kernel();
+//#include "consts.h"
+//#include "misc.h"
 
 class RTRendererCUDAQT : public QMainWindow
 {
