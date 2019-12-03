@@ -13,6 +13,8 @@
 #include <stdarg.h>
 #include <Windows.h>
 
+__device__ __managed__ bool VTModeEnabled = false;
+__device__ __managed__ clock_t StartTime;
 
 __device__ __host__ double ffmin(double a, double b)
 {

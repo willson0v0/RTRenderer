@@ -38,6 +38,8 @@
 
 #define ALLOWOUTOFBOUND
 
+
+
 constexpr auto ITER = 50;
 constexpr auto SPP = 4;
 
@@ -156,6 +158,7 @@ void func()
 unsigned char* ppm = new unsigned char [MAX_X * MAX_Y * 3 + 10000];
 
 
+
 int main(int argc, char* argv[])
 {
 	QApplication a(argc, argv);
@@ -164,7 +167,17 @@ int main(int argc, char* argv[])
 	a.exec();
 }
 
-void RTRendererCUDAQT::kernel()
+void RTRendererCUDAQT::refresh()
+{
+	QImage image(ppm, MAX_X, MAX_Y, MAX_X * 3, QImage::Format_RGB888);
+	image.rgbSwapped();
+	lab->clear();
+	lab->setPixmap(QPixmap::fromImage(image));
+	lab->repaint();
+}
+
+
+void LoopThread::kernel()
 {
 	func();
 	clock_t clk;
@@ -210,17 +223,10 @@ void RTRendererCUDAQT::kernel()
 #endif
 
 	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
-	//CV_64FC3  64位float 3通道
-	//Scalar初始化，三个通道的初值都是0
-	//矩阵  uchar* 就是矩阵
-	//后面应该是换成8UC3了.uchar == 8U , frameBuffer是C3
-	//原来问题是浮点数吗
 
 	size_t frameBufferSize = 3 * MAX_X * MAX_Y * sizeof(double);
 	double* frameBuffer;
 	checkCudaErrors(cudaMallocManaged((void**)&frameBuffer, frameBufferSize));
-
-	unsigned char convert[3 * MAX_X * MAX_Y * sizeof(unsigned char)];
 
 	Hittable** cudaList;
 	int num_Hittables = 500;
@@ -300,22 +306,24 @@ void RTRendererCUDAQT::kernel()
 		M.data = (uchar*)frameBuffer;
 		cv::imshow("wow", M);
 		if (cv::waitKey(1) == 27) break;;
-		*/
+		
 		
 		
 		for (int i = 0; i < 3 * MAX_X * MAX_Y; i++)
 		{
 			if (frameBuffer[i] >= 1)
-				convert[i] = 255;
+				ppm[i] = 255;
 			else
-				convert[i] = frameBuffer[i] * 256;
+				ppm[i] = frameBuffer[i] * 255.99;
 		}
+		
+		emit refresh_flag();
 
-		QImage image(convert,MAX_X,MAX_Y,MAX_X*3,QImage::Format_RGB888);
-		image.rgbSwapped();
-		lab->clear();
-		lab->setPixmap(QPixmap::fromImage(image));
-		lab->repaint();
+		if (this->break_flag == 1)
+		{
+			this->break_flag = 0;
+			break;
+		}
 
 		
 	}
@@ -336,3 +344,5 @@ void RTRendererCUDAQT::kernel()
 	system("Pause");
 
 }
+
+

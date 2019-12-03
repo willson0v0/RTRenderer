@@ -16,14 +16,15 @@ enum class LogLevel
 	extra	= 0x05
 };
 
-constexpr auto MAX_X = 1024;
-constexpr auto MAX_Y = 768;
-//constexpr auto MAX_X = 300;
-//constexpr auto MAX_Y = 200;
+//constexpr auto MAX_X = 1024;
+//constexpr auto MAX_Y = 768;
+constexpr auto MAX_X = 200;
+constexpr auto MAX_Y = 150;
 constexpr auto BLK_X = 25;
 constexpr auto BLK_Y = 20;
 constexpr auto PI = 3.1415926535897932384626433832795;
 constexpr auto logLevel = LogLevel::debug;
+
 
 constexpr auto ANSI_COLOR_RED = "\x1b[31m";
 constexpr auto ANSI_COLOR_GREEN = "\x1b[32m";
@@ -33,5 +34,5 @@ constexpr auto ANSI_COLOR_MAGENTA = "\x1b[35m";
 constexpr auto ANSI_COLOR_CYAN = "\x1b[36m";
 constexpr auto ANSI_COLOR_RESET = "\x1b[0m";
 
-__device__ __managed__ bool VTModeEnabled = false;
-__device__ __managed__ clock_t StartTime;
+
+
