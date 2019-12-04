@@ -161,6 +161,7 @@ unsigned char* ppm = new unsigned char [MAX_X * MAX_Y * 3 + 10000];
 
 int main(int argc, char* argv[])
 {
+	enableVTMode();
 	QApplication a(argc, argv);
 	RTRendererCUDAQT window;
 	window.show();
@@ -297,7 +298,8 @@ void LoopThread::kernel()
 		renderer <<<blocks, threads >>> (frameCount++, frameBuffer, cudaCam, cudaWorld, renderRandomStates);
 
 
-		checkCudaErrors(cudaGetLastError());																											checkCudaErrors(cudaDeviceSynchronize());
+		checkCudaErrors(cudaGetLastError());
+		checkCudaErrors(cudaDeviceSynchronize());
 
 		ms = double(clock() - StartTime);
 		renderTime = ms - renderTime;
@@ -335,8 +337,6 @@ void LoopThread::kernel()
 		{
 			break_ctrl++;
 		}
-
-		
 	}
 	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+");
 
