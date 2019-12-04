@@ -171,9 +171,9 @@ void RTRendererCUDAQT::refresh()
 {
 	QImage image(ppm, MAX_X, MAX_Y, MAX_X * 3, QImage::Format_RGB888);
 	image.rgbSwapped();
-	lab->clear();
-	lab->setPixmap(QPixmap::fromImage(image));
-	lab->repaint();
+	Lab->clear();
+	Lab->setPixmap(QPixmap::fromImage(image));
+	Lab->repaint();
 }
 
 
@@ -289,6 +289,7 @@ void LoopThread::kernel()
 	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+\033[A\r");
 
 	int frameCount = 0;
+	int break_ctrl = 1;
 	while (1)
 	{
 		renderTime = ms;
@@ -303,10 +304,11 @@ void LoopThread::kernel()
 		clearLine();
 		printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * frameCount / (ms - renderStart),7, frameCount * SPP);
 
+		/*
 		M.data = (uchar*)frameBuffer;
 		cv::imshow("wow", M);
 		if (cv::waitKey(1) == 27) break;;
-		
+		*/
 		
 		
 		for (int i = 0; i < 3 * MAX_X * MAX_Y; i++)
@@ -323,6 +325,15 @@ void LoopThread::kernel()
 		{
 			this->break_flag = 0;
 			break;
+		}
+
+		if (break_ctrl == this->pre_break)
+		{
+			break;
+		}
+		else
+		{
+			break_ctrl++;
 		}
 
 		
