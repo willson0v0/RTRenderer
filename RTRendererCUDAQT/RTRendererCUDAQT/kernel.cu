@@ -211,7 +211,6 @@ void LoopThread::kernel()
 	printMsg(LogLevel::warning, "Compiled under debug mode. Performance is compromised.");
 #endif
 
-	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
 
 
 	size_t frameBufferSize = 3 * MAX_X * MAX_Y * sizeof(double);
@@ -294,8 +293,6 @@ void LoopThread::kernel()
 		clearLine();
 		printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * frameCount / (ms - renderStart),7, frameCount * SPP);
 
-		M.data = (uchar*)frameBuffer;
-		cv::imshow("wow", M);
 		if (cv::waitKey(1) == 27) break;
 
 		if (_kbhit()) if (getch() == 'q') break;
@@ -316,15 +313,15 @@ void LoopThread::kernel()
 			this->break_flag = 0;
 			break;
 		}
-
-		
 	}
 	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+");
 
 	printMsg(LogLevel::debug, "Exec time: %lf ms. Saving result...", ms);
 
 	const char* fileName = "result.png";
+	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
 	cv::Mat output;
+	M.data = (uchar*)frameBuffer;
 	M *= 255.99;
 	M.convertTo(output, CV_8UC3);
 	cv::imwrite(fileName, output);

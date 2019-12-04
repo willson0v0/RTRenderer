@@ -13,7 +13,7 @@
 #include <QPainter>
 
 
-extern void kernel();
+//extern void kernel();
 
 //合并的话会发生什么？
 
