@@ -11,6 +11,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <Windows.h>
+#include <string>
+
+std::string str;
+
 
 #include "Vec3.h"
 
@@ -90,6 +94,9 @@ __host__ inline double randD()
 	return rand_generator();
 }
 
+//将这个函数变成GUI的
+//到时候照实说，LGZ写了函数原型，我将它改到GUI上
+
 template<typename... Arguments>
 __host__ __device__ void printMsg(LogLevel ll, const char* msg, Arguments... args)
 {
@@ -160,6 +167,12 @@ __host__ __device__ void printMsg(LogLevel ll, const char* msg, Arguments... arg
 	}
 	if (VTModeEnabled) printf(ANSI_COLOR_RESET);
 }
+
+
+
+
+
+
 
 __host__ __device__ void clearLine()
 {

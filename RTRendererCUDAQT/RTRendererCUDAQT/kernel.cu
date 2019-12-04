@@ -1,29 +1,18 @@
-#include "cuda.h"
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
 #include <iostream>
 #include <iomanip>
 #include <conio.h>
-#include <time.h>
-#include <conio.h>
-#include <thread>
-#include <chrono>
-#include <mutex>
-
-#include <QtCore/QDebug>
-#include <QtGui/QImage>
-#include <QtWidgets/QApplication>
-
-#include "opencv2/core/core.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/opencv.hpp"
 #include <opencv/cv.hpp>
-
-#include "consts.h"
-#include "Vec3.h"
+#include <opencv2/photo/cuda.hpp>
+#include "cudaExamp.h"
+#include "cuda.h"
 #include "misc.h"
-#include "RTRendererCUDAQT.h"
+#include "Vec3.h"
+#include <time.h>
+
 #include "Ray.h"
 #include "Sphere.h"
 #include "Hittable.h"
@@ -31,13 +20,30 @@
 #include "Material.h"
 #include "Camera.h"
 #include "WorldGen.h"
+#include <thread>
+#include <chrono>
+#include <mutex>
+
+#include "RTRendererCUDAQT.h"
+#include <QtWidgets/QApplication>
+
+
+
+#include <QtCore/QDebug>
+#include <QtGui/QImage>
+#include "opencv2/core/core.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/opencv.hpp"
+
 
 #define ALLOWOUTOFBOUND
+
+
 
 constexpr auto ITER = 50;
 constexpr auto SPP = 4;
 
-unsigned char* ppm = new unsigned char[MAX_X * MAX_Y * 3 + 10000];
+
 
 __device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* localRandState)
 {
@@ -144,12 +150,17 @@ __global__ void rander_init(curandState* randState)
 	curand_init(2019+pixel_index, 0, 0, &randState[pixel_index]);
 }
 
+void func()
+{
+	;
+}
+
+unsigned char* ppm = new unsigned char [MAX_X * MAX_Y * 3 + 10000];
+
+
+
 int main(int argc, char* argv[])
 {
-	StartTime = clock();
-	enableVTMode();
-	printMsg(LogLevel::info, "Ray Tracer Started. Waiting to start...");
-	QCoreApplication::addLibraryPath(".");
 	QApplication a(argc, argv);
 	RTRendererCUDAQT window;
 	window.show();
@@ -160,23 +171,23 @@ void RTRendererCUDAQT::refresh()
 {
 	QImage image(ppm, MAX_X, MAX_Y, MAX_X * 3, QImage::Format_RGB888);
 	image.rgbSwapped();
-	lab->clear();
-	lab->setPixmap(QPixmap::fromImage(image));
-	lab->repaint();
+	Lab->clear();
+	Lab->setPixmap(QPixmap::fromImage(image));
+	Lab->repaint();
 }
 
 
 void LoopThread::kernel()
 {
-	//system("cls");
+	func();
+	clock_t clk;
+	clk = clock();
 	double renderTime;
 
 	printMsg(LogLevel::info, "Rendering a %d x %d image in %d x %d blocks", MAX_X, MAX_Y, BLK_X, BLK_Y);
 	printMsg(LogLevel::info, "SPP(per frame) = %d, depth = %d", SPP, ITER);
 	printMsg(LogLevel::info, "Current log level: %d", logLevel);
 
-
-	printMsg(LogLevel::debug, "Performing GPU limit check");
 	size_t* pValue = new size_t;
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
 	printMsg(LogLevel::debug, "Stack size limit: \t\t%zu Byte.", *pValue);
@@ -211,7 +222,7 @@ void LoopThread::kernel()
 	printMsg(LogLevel::warning, "Compiled under debug mode. Performance is compromised.");
 #endif
 
-
+	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
 
 	size_t frameBufferSize = 3 * MAX_X * MAX_Y * sizeof(double);
 	double* frameBuffer;
@@ -278,6 +289,7 @@ void LoopThread::kernel()
 	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+\033[A\r");
 
 	int frameCount = 0;
+	int break_ctrl = 1;
 	while (1)
 	{
 		renderTime = ms;
@@ -285,19 +297,20 @@ void LoopThread::kernel()
 		renderer <<<blocks, threads >>> (frameCount++, frameBuffer, cudaCam, cudaWorld, renderRandomStates);
 
 
-		checkCudaErrors(cudaGetLastError());
-		checkCudaErrors(cudaDeviceSynchronize());
+		checkCudaErrors(cudaGetLastError());																											checkCudaErrors(cudaDeviceSynchronize());
 
 		ms = double(clock() - StartTime);
 		renderTime = ms - renderTime;
 		clearLine();
 		printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * frameCount / (ms - renderStart),7, frameCount * SPP);
 
-		if (cv::waitKey(1) == 27) break;
-
-		if (_kbhit()) if (getch() == 'q') break;
-
-#pragma omp parallel for
+		/*
+		M.data = (uchar*)frameBuffer;
+		cv::imshow("wow", M);
+		if (cv::waitKey(1) == 27) break;;
+		*/
+		
+		
 		for (int i = 0; i < 3 * MAX_X * MAX_Y; i++)
 		{
 			if (frameBuffer[i] >= 1)
@@ -313,15 +326,24 @@ void LoopThread::kernel()
 			this->break_flag = 0;
 			break;
 		}
+
+		if (break_ctrl == this->pre_break)
+		{
+			break;
+		}
+		else
+		{
+			break_ctrl++;
+		}
+
+		
 	}
 	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+");
 
 	printMsg(LogLevel::debug, "Exec time: %lf ms. Saving result...", ms);
 
 	const char* fileName = "result.png";
-	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
 	cv::Mat output;
-	M.data = (uchar*)frameBuffer;
 	M *= 255.99;
 	M.convertTo(output, CV_8UC3);
 	cv::imwrite(fileName, output);
@@ -331,5 +353,7 @@ void LoopThread::kernel()
 	printMsg(LogLevel::debug, "Device reset finished.");
 
 	system("Pause");
-	exit(0);
+
 }
+
+

@@ -1,17 +1,15 @@
 #pragma once
 
 #include <QtWidgets/QMainWindow>
-#include <QtWidgets/QApplication>
 #include "ui_RTRendererCUDAQT.h"
 #include <qwidget.h>
 #include <qlineedit.h>
 #include <qpushbutton.h>
 #include <qlabel.h>
 #include <qimage.h>
+#include "consts.h"
 #include <qthread.h>
-#include <QImage>
-#include <QPainter>
-
+#include <qtextedit.h>
 
 //extern void kernel();
 
@@ -28,12 +26,15 @@ public:
 		}
 	void kernel();
 	int break_flag = 0;
+	int pre_break = 0;//默认是0，不依靠它提供break
+	void PrintMessege();
 protected:
 	void run();
 
 signals:
 	void done();
 	void refresh_flag();
+	void info_flag();
 };
 
 
@@ -47,14 +48,19 @@ public:
 	LoopThread* looper;
 	
 public slots:
-	void SlotTest();
+	void Startear();
 	void refresh();
 	void Stop();
+	void ShowPara();
+	
 	
 private:
-	QPushButton* pb;
-	QPushButton* stop_pb;
-	QLabel* lab;
+	QPushButton* StartButton;
+	QPushButton* StopButton;
+	QLabel* Lab;
+	QPushButton* Updater;
+	QTextEdit* ParameterText;
+	QLineEdit* Para_Stop;
 	Ui::RTRendererCUDAQTClass ui;
 };
 
