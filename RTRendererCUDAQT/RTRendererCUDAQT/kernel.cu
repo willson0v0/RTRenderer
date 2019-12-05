@@ -63,8 +63,8 @@ __device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* lo
 #ifdef DARKSCENE
 		Vec3 c(0, 0, 0);
 #else
-		Vec3 unit_direction = unitVector(cur_ray.direction);
-		double t = 0.5f * (unit_direction.e[1] + 1.0f);
+		Vec3 unit_direction = unitVector(r.direction);
+		float t = 0.5f * (unit_direction.e[1] + 1.0f);
 		Vec3 c = (1.0f - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
 #endif
 		return c;
@@ -95,7 +95,7 @@ __device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState
 			Vec3 c(0, 0, 0);
 #else
 			Vec3 unit_direction = unitVector(cur_ray.direction);
-			double t = 0.5f * (unit_direction.e[1] + 1.0f);
+			float t = 0.5f * (unit_direction.e[1] + 1.0f);
 			Vec3 c = (1.0f - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
 #endif
 			return cur_attenuation * c;
@@ -105,7 +105,7 @@ __device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState
 }
 
 // Main rander func.
-__global__ void renderer(int frameCount, double* fBuffer, Camera** cam, Hittable** world, curandState* randState)  //{b, g, r}, stupid opencv
+__global__ void renderer(int frameCount, float* fBuffer, Camera** cam, Hittable** world, curandState* randState)  //{b, g, r}, stupid opencv
 {
 	
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -126,13 +126,13 @@ __global__ void renderer(int frameCount, double* fBuffer, Camera** cam, Hittable
 		pixel *= SPP;
 	}
 	for (int s = 0; s < SPP; s++) {
-		double u = double(i + curand_uniform(&localRandState)) / double(MAX_X);
-		double v = double(j + curand_uniform(&localRandState)) / double(MAX_Y);
+		float u = float(i + curand_uniform(&localRandState)) / float(MAX_X);
+		float v = float(j + curand_uniform(&localRandState)) / float(MAX_Y);
 		Ray r = (*cam)->getRay(u, v, &localRandState);
 		pixel += color(r, world, &localRandState);
 	}
 	randState[index] = localRandState;
-	pixel /= double(SPP);
+	pixel /= float(SPP);
 	pixel /= frameCount + 1.0;
 	pixel.e[0] = sqrt(pixel.e[0]);
 	pixel.e[1] = sqrt(pixel.e[1]);
@@ -183,7 +183,7 @@ void LoopThread::kernel()
 	func();
 	clock_t clk;
 	clk = clock();
-	double renderTime;
+	float renderTime;
 
 	printMsg(LogLevel::info, "Rendering a %d x %d image in %d x %d blocks", MAX_X, MAX_Y, BLK_X, BLK_Y);
 	printMsg(LogLevel::info, "SPP(per frame) = %d, depth = %d", SPP, ITER);
@@ -223,10 +223,10 @@ void LoopThread::kernel()
 	printMsg(LogLevel::warning, "Compiled under debug mode. Performance is compromised.");
 #endif
 
-	cv::Mat M(MAX_Y, MAX_X, CV_64FC3, cv::Scalar(0, 0, 0));
+	cv::Mat M(MAX_Y, MAX_X, CV_32FC3, cv::Scalar(0, 0, 0));
 
-	size_t frameBufferSize = 3 * MAX_X * MAX_Y * sizeof(double);
-	double* frameBuffer;
+	size_t frameBufferSize = 3 * MAX_X * MAX_Y * sizeof(float);
+	float* frameBuffer;
 	checkCudaErrors(cudaMallocManaged((void**)&frameBuffer, frameBufferSize));
 
 	Hittable** cudaList;
@@ -237,7 +237,7 @@ void LoopThread::kernel()
 	Camera** cudaCam;
 	checkCudaErrors(cudaMalloc((void**)&cudaCam, sizeof(Camera*)));
 
-	double ms = double(clock() - StartTime);
+	float ms = float(clock() - StartTime);
 	printMsg(LogLevel::info, "Alloc finished @ %lf ms", ms);
 
 	curandState* worldGenRandState;
@@ -265,7 +265,7 @@ void LoopThread::kernel()
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
 
-	ms = double(clock() - StartTime);
+	ms = float(clock() - StartTime);
 	printMsg(LogLevel::info, "World gen finished @ %lf ms", ms);
 
 	dim3 blocks(MAX_X / BLK_X + 1, MAX_Y / BLK_Y + 1);
@@ -277,8 +277,8 @@ void LoopThread::kernel()
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
 
-	ms = double(clock() - StartTime);
-	double renderStart = ms;
+	ms = float(clock() - StartTime);
+	float renderStart = ms;
 	printMsg(LogLevel::info, "Init renderer finished @ %lf ms", ms);
 
 	printMsg(LogLevel::info, "\t+-------------------------------------------------------------------------------+");
@@ -301,7 +301,7 @@ void LoopThread::kernel()
 		checkCudaErrors(cudaGetLastError());
 		checkCudaErrors(cudaDeviceSynchronize());
 
-		ms = double(clock() - StartTime);
+		ms = float(clock() - StartTime);
 		renderTime = ms - renderTime;
 		clearLine();
 		printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * frameCount / (ms - renderStart),7, frameCount * SPP);
@@ -312,13 +312,26 @@ void LoopThread::kernel()
 		if (cv::waitKey(1) == 27) break;;
 		*/
 		
-		
+		/*
 		for (int i = 0; i < 3 * MAX_X * MAX_Y; i++)
 		{
 			if (frameBuffer[i] >= 1)
 				ppm[i] = 255;
 			else
 				ppm[i] = frameBuffer[i] * 255.99;
+		}
+		*/
+
+		for (int i = 0; i < MAX_Y; i++)
+		{
+			for (int j = 0; j < MAX_X; j++)
+			{
+				int index = 3 * (i * MAX_X + j);
+				for (int k = 0; k < 3; k++)
+				{
+					ppm[index + k] = clip(1.0, 0.0, frameBuffer[index + 2 - k]) * 255.99;
+				}
+			}
 		}
 		
 		emit refresh_flag();
@@ -351,9 +364,6 @@ void LoopThread::kernel()
 	printMsg(LogLevel::info, "File saved at: \"%s\"", fileName);
 	checkCudaErrors(cudaDeviceReset());
 	printMsg(LogLevel::debug, "Device reset finished.");
-
-	system("Pause");
-
 }
 
 

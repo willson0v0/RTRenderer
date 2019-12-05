@@ -6,28 +6,28 @@ class Sphere : public Hittable
 {
 public:
 	Vec3 center;
-	double radius;
+	float radius;
 	Material* matPtr;
 
 	__device__ Sphere() {}
-	__device__ Sphere(Vec3 center_, double radius_, Material *m):center(center_), radius(radius_), matPtr(m) {}
+	__device__ Sphere(Vec3 center_, float radius_, Material *m):center(center_), radius(radius_), matPtr(m) {}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const;
+	__device__ virtual bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec, curandState* localRandState) const;
 	__device__ virtual bool boundingBox(AABB& box) const;
 
 };
 
-__device__ bool Sphere::hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
+__device__ bool Sphere::hit(const Ray& r, float tMin, float tMax, HitRecord& rec, curandState* localRandState) const
 {
 	Vec3 offset = r.origin - center;
-	double a = dot(r.direction, r.direction);
-	double b = dot(offset, r.direction);
-	double c = dot(offset, offset) - radius * radius;
-	double diss = b * b - a * c;
+	float a = dot(r.direction, r.direction);
+	float b = dot(offset, r.direction);
+	float c = dot(offset, offset) - radius * radius;
+	float diss = b * b - a * c;
 
 	if (diss > 0)
 	{
-		double t = (-b - sqrt(diss)) / a;
+		float t = (-b - sqrt(diss)) / a;
 		if (t > tMin&& t < tMax)
 		{
 			rec.t = t;

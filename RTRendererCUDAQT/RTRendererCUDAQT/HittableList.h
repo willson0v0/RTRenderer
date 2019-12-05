@@ -10,15 +10,15 @@ public:
 
 	__device__ HittableList() :list(nullptr), listSize(0) {}
 	__device__ HittableList(Hittable** l, int n) :list(l), listSize(n) {}
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const;
+	__device__ virtual bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec, curandState* localRandState) const;
 	__device__ bool virtual boundingBox(AABB& box) const;
 };
 
-__device__ bool HittableList::hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
+__device__ bool HittableList::hit(const Ray& r, float tMin, float tMax, HitRecord& rec, curandState* localRandState) const
 {
 	HitRecord tRec;
 	bool hitAny = false;
-	double closest = tMax;
+	float closest = tMax;
 	for (int i = 0; i < listSize; i++)
 	{
 		if (list[i]->hit(r, tMin, closest, tRec, localRandState))

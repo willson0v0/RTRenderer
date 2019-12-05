@@ -2,7 +2,7 @@
 
 #include "misc.h"
 
-__device__ inline double trilinearInterpolate(Vec3 c[2][2][2], double u, double v, double w);
+__device__ inline float trilinearInterpolate(Vec3 c[2][2][2], float u, float v, float w);
 
 __device__ int xPermute[256];
 __device__ int yPermute[256];
@@ -56,10 +56,10 @@ __device__ static void initPerlin(curandState* localRandState)
 	*localRandState = rs;
 }
 
-__device__ inline double trilinearInterpolate(Vec3 c[2][2][2], double u, double v, double w)
+__device__ inline float trilinearInterpolate(Vec3 c[2][2][2], float u, float v, float w)
 {
-	double accum = 0;
-	double uu, vv, ww;
+	float accum = 0;
+	float uu, vv, ww;
 	uu = u * u * (3 - 2 * u);   // Hermite cubit, eliminate Mach band
 	vv = v * v * (3 - 2 * v);
 	ww = w * w * (3 - 2 * w);
@@ -85,11 +85,11 @@ __device__ inline double trilinearInterpolate(Vec3 c[2][2][2], double u, double 
 class Perlin
 {
 public:
-	__device__ double noise(const Vec3& p) const
+	__device__ float noise(const Vec3& p) const
 	{
-		double u = p.e[0] - floor(p.e[0]);
-		double v = p.e[1] - floor(p.e[1]);
-		double w = p.e[2] - floor(p.e[2]);
+		float u = p.e[0] - floor(p.e[0]);
+		float v = p.e[1] - floor(p.e[1]);
+		float w = p.e[2] - floor(p.e[2]);
 
 		int i = int(floor(p.e[0])) & 255;
 		int j = int(floor(p.e[1])) & 255;
@@ -115,11 +115,11 @@ public:
 	}
 
 
-	__device__ double turbulence(const Vec3& p, int depth = 7) const
+	__device__ float turbulence(const Vec3& p, int depth = 7) const
 	{
-		double accum = 0;
+		float accum = 0;
 		Vec3 tp = p;
-		double weight = 1;
+		float weight = 1;
 		for (int i = 0; i < depth; i++)
 		{
 			accum += weight * noise(tp);

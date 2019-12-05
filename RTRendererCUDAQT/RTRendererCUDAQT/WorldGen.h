@@ -11,7 +11,7 @@
 #include "HittableList.h"
 #include "BVH.h"
 
-__global__ void generateCamera(Camera** cameraPtr, Vec3 lookFrom, Vec3 lookAt, Vec3 vup, double vfov,double aperture, double focusDist = -1)
+__global__ void generateCamera(Camera** cameraPtr, Vec3 lookFrom, Vec3 lookAt, Vec3 vup, float vfov,float aperture, float focusDist = -1)
 {
 	if (focusDist == -1) focusDist = (lookAt - lookFrom).length();
 	*cameraPtr = new Camera(MAX_X, MAX_Y, vfov, lookFrom, lookAt, vup, aperture, focusDist);
@@ -33,8 +33,8 @@ __global__ void createWorld1(Hittable** list, Hittable** world, Camera** camera,
 
 	Vec3 lookfrom(13, 2, 3);
 	Vec3 lookat(0, 0, 0);
-	double focusDist = (lookfrom - lookat).length() - 4;
-	double aperture = 0.1;
+	float focusDist = (lookfrom - lookat).length() - 4;
+	float aperture = 0.1;
 	*camera = new Camera(MAX_X, MAX_Y, 30.0f, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }
 
@@ -61,8 +61,8 @@ __global__ void createCheckerTest(Hittable** list, Hittable** world, Camera** ca
 
 	Vec3 lookfrom(10, 0, 10);
 	Vec3 lookat(0, 0, 0);
-	double focusDist = (lookfrom - lookat).length();
-	double aperture = 0.05;
+	float focusDist = (lookfrom - lookat).length();
+	float aperture = 0.05;
 	*camera = new Camera(MAX_X, MAX_Y, 60.0f, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }
 
@@ -95,8 +95,8 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 	
 	for (int a = -11; a < 11; a++) {
 		for (int b = -11; b < 11; b++) {
-			double choose_mat = RND;
-			double radius = 0.1 * RND + 0.1;
+			float choose_mat = RND;
+			float radius = 0.1 * RND + 0.1;
 			Vec3 center(RND*0.9 + a, radius, RND*0.9 + b);
 			if (choose_mat < 0.4f) {
 				list[i++] = new Sphere(center, radius,
@@ -125,9 +125,9 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 
 	Vec3 lookfrom(13, 2, 3);
 	Vec3 lookat(0, 0, 0);
-	double focusDist = (lookfrom - lookat).length() - 4;
-	double aperture = 0.1;
-	double fov = 30.0;
+	float focusDist = (lookfrom - lookat).length() - 4;
+	float aperture = 0.1;
+	float fov = 30.0;
 	*camera = new Camera(MAX_X, MAX_Y, fov, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }
 
@@ -165,8 +165,8 @@ __global__ void createCornellBox(Hittable** list, Hittable** world, Camera** cam
 
 	Vec3 lookfrom(278, 278, -800);
 	Vec3 lookat(278, 278, 0);
-	double focusDist = (lookfrom - lookat).length();
-	double aperture = 0;
+	float focusDist = (lookfrom - lookat).length();
+	float aperture = 0;
 	*camera = new Camera(MAX_X, MAX_Y, 40, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }
 
@@ -213,7 +213,7 @@ __global__ void createCornellSmoke(Hittable** list, Hittable** world, Camera** c
 
 	Vec3 lookfrom(278, 278, -800);
 	Vec3 lookat(278, 278, 0);
-	double focusDist = (lookfrom - lookat).length();
-	double aperture = 0;
+	float focusDist = (lookfrom - lookat).length();
+	float aperture = 0;
 	*camera = new Camera(MAX_X, MAX_Y, 40, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }

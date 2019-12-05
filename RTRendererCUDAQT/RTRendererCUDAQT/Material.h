@@ -7,9 +7,9 @@ class Material
 {
 public:
 	__device__ virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered, curandState* localRandState) const = 0;
-	//virtual Vec3 emitted(double u, double v, const Vec3& p) const { return Vec3(0, 0, 0); }
+	//virtual Vec3 emitted(float u, float v, const Vec3& p) const { return Vec3(0, 0, 0); }
 
-	__device__ virtual Vec3 emitted(double u, double v, const Vec3& point) const
+	__device__ virtual Vec3 emitted(float u, float v, const Vec3& point) const
 	{
 		return Vec3(0, 0, 0);
 	}
@@ -29,7 +29,7 @@ public:
 		return true;
 	}
 
-	__device__ virtual Vec3 emitted(double u, double v, const Vec3& point) const
+	__device__ virtual Vec3 emitted(float u, float v, const Vec3& point) const
 	{
 		return Vec3(0, 0, 0);
 	}
@@ -39,10 +39,10 @@ class Metal : public Material
 {
 public:
 	Vec3 albedo;
-	double fuzz;
+	float fuzz;
 
-	__device__ Metal(double r, double g, double b, double f) : albedo(Vec3(r, g, b)), fuzz(f < 1 ? f : 1) {}
-	__device__ Metal(const Vec3& a, double f) : albedo(a), fuzz(f) {}
+	__device__ Metal(float r, float g, float b, float f) : albedo(Vec3(r, g, b)), fuzz(f < 1 ? f : 1) {}
+	__device__ Metal(const Vec3& a, float f) : albedo(a), fuzz(f) {}
 	__device__ virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered, curandState* localRandState) const
 	{
 		Vec3 reflected = reflect(unitVector(rIn.direction), rec.normal);
@@ -51,7 +51,7 @@ public:
 		return (dot(scattered.direction, rec.normal) > 0);
 	}
 
-	__device__ virtual Vec3 emitted(double u, double v, const Vec3& point) const
+	__device__ virtual Vec3 emitted(float u, float v, const Vec3& point) const
 	{
 		return Vec3(0, 0, 0);
 	}
@@ -60,22 +60,22 @@ public:
 class Dielectric : public Material
 {
 public:
-	double refIndex;
-	double fuzz;
+	float refIndex;
+	float fuzz;
 	Vec3 albedo;
 
-	__device__ Dielectric(Vec3 al, double ri, double f) : refIndex(ri), albedo(al), fuzz(f > 1 ? 1 : f) {}
+	__device__ Dielectric(Vec3 al, float ri, float f) : refIndex(ri), albedo(al), fuzz(f > 1 ? 1 : f) {}
 
 	__device__ virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered, curandState* localRandState) const
 	{
 		Vec3 oNorm;
 		Vec3 reflected = reflect(rIn.direction, rec.normal);
-		double rri;
+		float rri;
 		attenuation = albedo;
 		Vec3 refracted;
 
-		double reflectProb;
-		double cos;
+		float reflectProb;
+		float cos;
 
 		if (dot(rIn.direction, rec.normal) > 0) // Light went into glass
 		{
@@ -110,7 +110,7 @@ public:
 		return true;
 	}
 
-	__device__ virtual Vec3 emitted(double u, double v, const Vec3& point) const
+	__device__ virtual Vec3 emitted(float u, float v, const Vec3& point) const
 	{
 		return Vec3(0, 0, 0);
 	}
@@ -128,7 +128,7 @@ public:
 		return false;
 	}
 
-	__device__ virtual Vec3 emitted(double u, double v, const Vec3& point) const
+	__device__ virtual Vec3 emitted(float u, float v, const Vec3& point) const
 	{
 		return emitTexture->value(u, v, point);
 	}
@@ -148,7 +148,7 @@ public:
 		return true;
 	}
 
-	__device__ virtual Vec3 emitted(double u, double v, const Vec3& point) const
+	__device__ virtual Vec3 emitted(float u, float v, const Vec3& point) const
 	{
 		return Vec3(0, 0, 0);
 	}

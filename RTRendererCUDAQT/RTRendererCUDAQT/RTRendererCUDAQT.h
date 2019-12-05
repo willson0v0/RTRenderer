@@ -43,7 +43,7 @@ class RTRendererCUDAQT : public QMainWindow
 
 public:
 	RTRendererCUDAQT(QWidget* parent = Q_NULLPTR);
-	double clip_upperbound = 1;
+	float clip_upperbound = 1;
 	LoopThread* looper;
 	
 public slots:

@@ -11,5 +11,5 @@ public:
 	__device__ Ray() {}
 	__device__ Ray(const Vec3& a, const Vec3& b):origin(a), direction(b) {}
 
-	__device__ Vec3 pointAtParam(double t) const { return origin + t * direction; }
+	__device__ Vec3 pointAtParam(float t) const { return origin + t * direction; }
 };

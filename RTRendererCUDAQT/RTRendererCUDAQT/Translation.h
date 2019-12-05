@@ -10,7 +10,7 @@ public:
 
 	__device__ Translate(Hittable* p, const Vec3& ofst) : origin(p), offset(ofst) {}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
+	__device__ virtual bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec, curandState* localRandState) const
 	{
 		Ray moved(r.origin - offset, r.direction);
 		if (origin->hit(moved, tMin, tMax, rec, localRandState))
@@ -40,21 +40,21 @@ class RotateY : public Hittable
 {
 public:
 	Hittable* origin;
-	double sinTheta;
-	double cosTheta;
+	float sinTheta;
+	float cosTheta;
 	bool hasBB;
 	AABB bBox;
 
-	__device__ RotateY(Hittable* p, double angle):origin(p)
+	__device__ RotateY(Hittable* p, float angle):origin(p)
 	{
-		double radians = (PI / 180.0) * angle;
+		float radians = (PI / 180.0) * angle;
 		sinTheta = sin(radians);
 		cosTheta = cos(radians);
 
 		hasBB = origin->boundingBox(bBox);
 
-		double x[4];
-		double z[4];
+		float x[4];
+		float z[4];
 
 		x[0] = cosTheta * bBox.farVec.e[0] + sinTheta * bBox.farVec.e[2];
 		x[1] = cosTheta * bBox.farVec.e[0] + sinTheta * bBox.nearVec.e[2];
@@ -66,12 +66,12 @@ public:
 		z[2] = -sinTheta * bBox.nearVec.e[0] + cosTheta * bBox.farVec.e[2];
 		z[3] = -sinTheta * bBox.nearVec.e[0] + cosTheta * bBox.nearVec.e[2];
 
-		double xMin = DBL_MAX;
-		double xMax = DBL_MIN;
-		double yMin = DBL_MAX;
-		double yMax = DBL_MIN;
-		double zMin = DBL_MAX;
-		double zMax = DBL_MIN;
+		float xMin = DBL_MAX;
+		float xMax = DBL_MIN;
+		float yMin = DBL_MAX;
+		float yMax = DBL_MIN;
+		float zMin = DBL_MAX;
+		float zMax = DBL_MIN;
 
 		for (int i = 0; i < 4; i++)
 		{
@@ -95,7 +95,7 @@ public:
 		bBox = AABB(Vec3(xMin, yMin, zMin), Vec3(xMax, yMax, zMax));
 	}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
+	__device__ virtual bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec, curandState* localRandState) const
 	{
 		Ray rotated(
 			Vec3(

@@ -8,7 +8,7 @@ public:
 	Hittable* content;
 	__device__ FlipNorm(Hittable* p) :content(p) {}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
+	__device__ virtual bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec, curandState* localRandState) const
 	{
 		if (content->hit(r, tMin, tMax, rec, localRandState))
 		{
@@ -33,19 +33,19 @@ class RectXY :public Hittable
 {
 public:
 	Material* matPtr;
-	double x0, x1, y0, y1, z, xL, yL;
+	float x0, x1, y0, y1, z, xL, yL;
 
 	__device__ RectXY() {}
-	__device__ RectXY(double x0_, double x1_, double y0_, double y1_, double z_, Material* matPtr_)
+	__device__ RectXY(float x0_, float x1_, float y0_, float y1_, float z_, Material* matPtr_)
 		: x0(x0_), x1(x1_), y0(y0_), y1(y1_), z(z_), xL(x1 - x0), yL(y1 - y0), matPtr(matPtr_) {}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
+	__device__ virtual bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec, curandState* localRandState) const
 	{
 		//				r.origin.z  r.dir.z
-		double t = (z - r.origin.e[2]) / r.direction.e[2];
+		float t = (z - r.origin.e[2]) / r.direction.e[2];
 
-		double x = r.origin.e[0] + t * r.direction.e[0];
-		double y = r.origin.e[1] + t * r.direction.e[1];
+		float x = r.origin.e[0] + t * r.direction.e[0];
+		float y = r.origin.e[1] + t * r.direction.e[1];
 
 		if (t<tMin || t>tMax || x<x0 || x>x1 || y<y0 || y>y1)
 			return false;
@@ -70,19 +70,19 @@ class RectXZ :public Hittable
 {
 public:
 	Material* matPtr;
-	double x0, x1, z0, z1, y, xL, zL;
+	float x0, x1, z0, z1, y, xL, zL;
 
 	__device__ RectXZ() {}
-	__device__ RectXZ(double x0_, double x1_, double z0_, double z1_, double y_, Material* matPtr_)
+	__device__ RectXZ(float x0_, float x1_, float z0_, float z1_, float y_, Material* matPtr_)
 		: x0(x0_), x1(x1_), z0(z0_), z1(z1_), y(y_), xL(x1 - x0), zL(z1 - z0), matPtr(matPtr_) {}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
+	__device__ virtual bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec, curandState* localRandState) const
 	{
 		//				r.origin.y			r.dir.y
-		double t = (y - r.origin.e[1]) / r.direction.e[1];
+		float t = (y - r.origin.e[1]) / r.direction.e[1];
 
-		double x = r.origin.e[0] + t * r.direction.e[0];
-		double z = r.origin.e[2] + t * r.direction.e[2];
+		float x = r.origin.e[0] + t * r.direction.e[0];
+		float z = r.origin.e[2] + t * r.direction.e[2];
 
 		if (t<tMin || t>tMax || x<x0 || x>x1 || z<z0 || z>z1)
 			return false;
@@ -106,19 +106,19 @@ class RectYZ :public Hittable
 {
 public:
 	Material* matPtr;
-	double y0, y1, z0, z1, x, yL, zL;
+	float y0, y1, z0, z1, x, yL, zL;
 
 	__device__ RectYZ() {}
-	__device__ RectYZ(double y0_, double y1_, double z0_, double z1_, double x_, Material* matPtr_)
+	__device__ RectYZ(float y0_, float y1_, float z0_, float z1_, float x_, Material* matPtr_)
 		: y0(y0_), y1(y1_), z0(z0_), z1(z1_), x(x_), yL(y1 - y0), zL(z1 - z0), matPtr(matPtr_) {}
 
-	__device__ virtual bool hit(const Ray& r, double tMin, double tMax, HitRecord& rec, curandState* localRandState) const
+	__device__ virtual bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec, curandState* localRandState) const
 	{
 		//				r.origin.x			r.dir.x
-		double t = (x - r.origin.e[0]) / r.direction.e[0];
+		float t = (x - r.origin.e[0]) / r.direction.e[0];
 
-		double y = r.origin.e[1] + t * r.direction.e[1];
-		double z = r.origin.e[2] + t * r.direction.e[2];
+		float y = r.origin.e[1] + t * r.direction.e[1];
+		float z = r.origin.e[2] + t * r.direction.e[2];
 
 		if (t<tMin || t>tMax || y<y0 || y>y1 || z<z0 || z>z1)
 			return false;

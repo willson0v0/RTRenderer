@@ -13,15 +13,15 @@ public:
 	Vec3 origin;
 	Vec3 u, v, w; // new base, u/v on cam plane, w point at lookDir
 
-	double lensRadius;
+	float lensRadius;
 
-	__device__ Camera(int x, int y, double vfov, Vec3 lookFrom, Vec3 lookAt, Vec3 vup, double aperture, double focus)
+	__device__ Camera(int x, int y, float vfov, Vec3 lookFrom, Vec3 lookAt, Vec3 vup, float aperture, float focus)
 	{
 		lensRadius = aperture / 2;
-		double aspect = double(x) / double(y);
-		double theta = vfov * PI / 180.0;
-		double halfHeight = tan(theta / 2.00);
-		double halfWidth = aspect * halfHeight;
+		float aspect = float(x) / float(y);
+		float theta = vfov * PI / 180.0;
+		float halfHeight = tan(theta / 2.00);
+		float halfWidth = aspect * halfHeight;
 
 		origin = lookFrom;
 		w = unitVector(lookFrom - lookAt);
@@ -48,7 +48,7 @@ public:
 		);
 	}
 
-	__device__ Ray getRay(double s, double t, curandState* localRandState)
+	__device__ Ray getRay(float s, float t, curandState* localRandState)
 	{
 		Vec3 blur = lensRadius * randomVecInUnitDisk(localRandState);
 		Vec3 offset = u * blur.e[0] + v * blur.e[1];

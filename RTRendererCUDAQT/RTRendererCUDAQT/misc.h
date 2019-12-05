@@ -18,11 +18,11 @@ std::string str;
 
 #include "Vec3.h"
 
-__device__ __host__ double ffmin(double a, double b)
+__device__ __host__ float ffmin(float a, float b)
 {
 	return a < b ? a : b;
 }
-__device__ __host__ double ffmax(double a, double b)
+__device__ __host__ float ffmax(float a, float b)
 {
 	return a > b ? a : b;
 }
@@ -33,10 +33,10 @@ __device__ __host__ double ffmax(double a, double b)
 //										^				^
 //									  func			file name
 
-__device__ void getSphereUV(const Vec3& p, double& u, double& v)
+__device__ void getSphereUV(const Vec3& p, float& u, float& v)
 {
-	double phi = atan2(p.e[2], p.e[0]);
-	double theta = asin(p.e[1]);
+	float phi = atan2(p.e[2], p.e[0]);
+	float theta = asin(p.e[1]);
 	u = 1 - (phi + PI) / (2 * PI);
 	v = (theta + PI / 2) / PI;
 }
@@ -66,11 +66,11 @@ __device__ Vec3 reflect(const Vec3& v, const Vec3& norm)
 	return v - norm * (2 * dot(v, norm));
 }
 
-__device__ bool refract(const Vec3& v, const Vec3& n, double rri, Vec3& refracted) // rri: relative refractive index.
+__device__ bool refract(const Vec3& v, const Vec3& n, float rri, Vec3& refracted) // rri: relative refractive index.
 {
 	Vec3 uv = unitVector(v);
-	double dt = dot(uv, n);  //in angle
-	double dis = 1 - rri * rri * (1 - dt * dt); // is total internal reflection?
+	float dt = dot(uv, n);  //in angle
+	float dis = 1 - rri * rri * (1 - dt * dt); // is total internal reflection?
 	if (dis > 0)
 	{
 		refracted = rri * (uv - n * dt) - n * sqrt(dis);
@@ -79,17 +79,17 @@ __device__ bool refract(const Vec3& v, const Vec3& n, double rri, Vec3& refracte
 	return false;
 }
 
-__device__ double schlick(double cosine, double refIndex) {
-	double r0 = (1 - refIndex) / (1 + refIndex);
+__device__ float schlick(float cosine, float refIndex) {
+	float r0 = (1 - refIndex) / (1 + refIndex);
 	r0 = r0 * r0;
 	return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
-__host__ inline double randD()
+__host__ inline float randD()
 {
-	static std::uniform_real_distribution<double> distribution(0.0, 1.0);
+	static std::uniform_real_distribution<float> distribution(0.0, 1.0);
 	static std::mt19937 generator;
-	static std::function<double()> rand_generator =
+	static std::function<float()> rand_generator =
 		std::bind(distribution, generator);
 	return rand_generator();
 }
@@ -221,4 +221,9 @@ __host__ void checkCuda(cudaError_t result, char const* const func, const char* 
 		system("pause");
 		exit(-1);
 	}
+}
+
+__device__ __host__ float clip(float upperBound, float loweBound, float in)
+{
+	return in > upperBound ? upperBound : (in < loweBound ? loweBound : in);
 }

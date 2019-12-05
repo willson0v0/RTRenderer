@@ -10,16 +10,16 @@ public:
 
 	__device__ AABB() {}
 	__device__ AABB(const Vec3& near_, const Vec3& far_): nearVec(near_), farVec(far_) {}
-	__device__ bool hit(const Ray& r, double tMin, double tMax) const
+	__device__ bool hit(const Ray& r, float tMin, float tMax) const
 	{
 		for (int i = 0; i < 3; i++)
 		{
-			double invD = 1.0 / r.direction.e[i];
-			double t0 = (nearVec.e[i] - r.origin.e[i]) * invD;
-			double t1 = (farVec.e[i] - r.origin.e[i]) * invD;
+			float invD = 1.0 / r.direction.e[i];
+			float t0 = (nearVec.e[i] - r.origin.e[i]) * invD;
+			float t1 = (farVec.e[i] - r.origin.e[i]) * invD;
 			if (invD < 0)
 			{
-				double t = t0;
+				float t = t0;
 				t0 = t1;
 				t1 = t;
 			}
