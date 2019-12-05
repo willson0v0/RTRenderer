@@ -319,6 +319,7 @@ void LoopThread::kernel()
 
 	const char* fileName = "result.png";
 	cv::Mat output;
+	M.data = (unsigned char *)frameBuffer;
 	M *= 255.99;
 	M.convertTo(output, CV_8UC3);
 	cv::imwrite(fileName, output);
