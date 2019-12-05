@@ -61,6 +61,16 @@ __device__ Vec3 randomVecInUnitDisk(curandState* localRandState)
 	return p;
 }
 
+__device__ Vec3 randomVecInHemisphere(Vec3 axis, curandState* localRandState)
+{
+	Vec3 res;
+	do
+	{
+		res = randomVecInUnitSphere(localRandState);
+	} while (res.squaredLength() >= 1 || dot(res, axis) < 0.05);
+	return res;
+}
+
 __device__ Vec3 reflect(const Vec3& v, const Vec3& norm)
 {
 	return v - norm * (2 * dot(v, norm));

@@ -66,6 +66,7 @@ __global__ void createCheckerTest(Hittable** list, Hittable** world, Camera** ca
 	*camera = new Camera(MAX_X, MAX_Y, 60.0f, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }
 
+#undef RND
 #define RND (curand_uniform(randState))
 __global__ void createRandScene(Hittable** list, Hittable** world, Camera** camera, unsigned char* texture, int tx, int ty, curandState* randState)
 {
@@ -138,7 +139,7 @@ __global__ void createCornellBox(Hittable** list, Hittable** world, Camera** cam
 
 	list[i++] = new RectYZ(000, 555, 000, 555, 555, new Lambertian(new ConstantTexture(0.12, 0.45, 0.15)));
 	list[i++] = new RectYZ(000, 555, 000, 555, 000,	new Lambertian(new ConstantTexture(0.65, 0.05, 0.05)));
-	list[i++] = new RectXZ(213, 343, 227, 332, 554, new DiffuseLight(new ConstantTexture(15, 15, 15)));
+	list[i++] = new RectXZ(213, 343, 227, 332, 554, new DiffuseLight(new ConstantTexture(20, 20, 20)));
 	list[i++] = new RectXZ(000, 555, 000, 555, 555, new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
 	list[i++] = new RectXZ(000, 555, 000, 555, 000, new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
 	list[i++] = new RectXY(000, 555, 000, 555, 555, new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));

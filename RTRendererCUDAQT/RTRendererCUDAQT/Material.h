@@ -23,7 +23,9 @@ public:
 	__device__ Lambertian(Texture* a) : albedo(a) {}
 	__device__ virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered, curandState* localRandState) const
 	{
-		Vec3 tgt = rec.normal + randomVecInUnitSphere(localRandState);
+		//Vec3 tgt = rec.normal + randomVecInUnitSphere(localRandState);
+
+		Vec3 tgt = randomVecInHemisphere(rec.normal, localRandState);
 		scattered = Ray(rec.point, tgt);
 		attenuation = albedo->value(rec.u, rec.v, rec.point);
 		return true;

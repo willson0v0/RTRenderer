@@ -66,12 +66,12 @@ public:
 		z[2] = -sinTheta * bBox.nearVec.e[0] + cosTheta * bBox.farVec.e[2];
 		z[3] = -sinTheta * bBox.nearVec.e[0] + cosTheta * bBox.nearVec.e[2];
 
-		float xMin = DBL_MAX;
-		float xMax = DBL_MIN;
-		float yMin = DBL_MAX;
-		float yMax = DBL_MIN;
-		float zMin = DBL_MAX;
-		float zMax = DBL_MIN;
+		float xMin = FLT_MAX;
+		float xMax = FLT_MIN;
+		float yMin = FLT_MAX;
+		float yMax = FLT_MIN;
+		float zMin = FLT_MAX;
+		float zMax = FLT_MIN;
 
 		for (int i = 0; i < 4; i++)
 		{

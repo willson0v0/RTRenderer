@@ -38,17 +38,14 @@
 
 #define ALLOWOUTOFBOUND
 
-
-
 constexpr auto ITER = 50;
 constexpr auto SPP = 4;
-
 
 
 __device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* localRandState)
 {
 	HitRecord rec;
-	if ((*world)->hit(r, 0.000001, FLT_MAX, rec, localRandState)) {
+	if ((*world)->hit(r, 0.001, FLT_MAX, rec, localRandState)) {
 		Ray scattered;
 		Vec3 attenuation;
 		Vec3 emitted = rec.matPtr->emitted(rec.u, rec.v, rec.point);
@@ -69,39 +66,6 @@ __device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* lo
 #endif
 		return c;
 	}
-}
-
-__device__ Vec3 color(const Ray& r, Hittable** world,curandState* localRandState)
-{
-	Ray cur_ray = r;
-	Vec3 cur_attenuation = Vec3(1.0, 1.0, 1.0);
-	for (int i = 0; i < ITER; i++) {
-		HitRecord rec;
-		if ((*world)->hit(cur_ray, 0.001, FLT_MAX, rec, localRandState)) {
-			Ray scattered;
-			Vec3 attenuation;
-			Vec3 emitted = rec.matPtr->emitted(rec.u, rec.v, rec.point);
-			if (rec.matPtr->scatter(cur_ray, rec, attenuation, scattered, localRandState)) {
-				cur_attenuation *= attenuation;
-				cur_attenuation += emitted;
-				cur_ray = scattered;
-			}
-			else {
-				return cur_attenuation * emitted;
-			}
-		}
-		else {
-#ifdef DARKSCENE
-			Vec3 c(0, 0, 0);
-#else
-			Vec3 unit_direction = unitVector(cur_ray.direction);
-			float t = 0.5f * (unit_direction.e[1] + 1.0f);
-			Vec3 c = (1.0f - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
-#endif
-			return cur_attenuation * c;
-		}
-	}
-	return Vec3(0.05, 0.05, 0.1); // exceeded recursion
 }
 
 // Main rander func.
@@ -129,7 +93,7 @@ __global__ void renderer(int frameCount, float* fBuffer, Camera** cam, Hittable*
 		float u = float(i + curand_uniform(&localRandState)) / float(MAX_X);
 		float v = float(j + curand_uniform(&localRandState)) / float(MAX_Y);
 		Ray r = (*cam)->getRay(u, v, &localRandState);
-		pixel += color(r, world, &localRandState);
+		pixel += color(r, world, 0 ,&localRandState);
 	}
 	randState[index] = localRandState;
 	pixel /= float(SPP);
@@ -181,8 +145,6 @@ void RTRendererCUDAQT::refresh()
 void LoopThread::kernel()
 {
 	func();
-	clock_t clk;
-	clk = clock();
 	float renderTime;
 
 	printMsg(LogLevel::info, "Rendering a %d x %d image in %d x %d blocks", MAX_X, MAX_Y, BLK_X, BLK_Y);
@@ -259,7 +221,7 @@ void LoopThread::kernel()
 	createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState);
 	// createWorld1 <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 	// createCheckerTest <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
-	// createCornellBox << <1, 1 >> > (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	// createCornellBox <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 	// createCornellSmoke <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 
 	checkCudaErrors(cudaGetLastError());

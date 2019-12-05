@@ -22,9 +22,9 @@ public:
 __device__ bool ConstantMedium::hit(const Ray& r, float tMin, float tMax, HitRecord& rec, curandState* localRandState) const
 {
 	HitRecord rec1, rec2;
-	if (boundary->hit(r, -DBL_MAX, DBL_MAX, rec1, localRandState))
+	if (boundary->hit(r, -FLT_MAX, FLT_MAX, rec1, localRandState))
 	{
-		if (boundary->hit(r, rec1.t + 0.000001, DBL_MAX, rec2, localRandState))
+		if (boundary->hit(r, rec1.t + 0.000001, FLT_MAX, rec2, localRandState))
 		{
 			rec1.t = rec1.t < tMin ? tMin : rec1.t;
 			rec2.t = rec2.t > tMax ? tMax : rec2.t;

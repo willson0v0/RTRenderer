@@ -29,6 +29,7 @@ public:
 	__host__ __device__ inline Vec3& operator/=(const Vec3& v2);
 	__host__ __device__ inline Vec3& operator*=(const float v2);
 	__host__ __device__ inline Vec3& operator/=(const float v2);
+	__host__ __device__ inline bool operator==(const Vec3& v2);
 
 
 	__host__ __device__ inline float squaredLength() const { return e[0] * e[0] + e[1] * e[1] + e[2] * e[2]; }
@@ -182,6 +183,11 @@ __host__ __device__ inline Vec3& Vec3::operator/=(const float t)
 	e[1] /= t;
 	e[2] /= t;
 	return *this;
+}
+
+__host__ __device__ inline bool Vec3::operator==(const Vec3& v2)
+{
+	return e[0] == v2.e[0] && e[1] == v2.e[1] && e[2] == v2.e[2];
 }
 
 __host__ __device__ inline Vec3 unitVector(Vec3 v)

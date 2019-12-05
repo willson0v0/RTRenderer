@@ -97,7 +97,6 @@ public:
 
 		Vec3 c[2][2][2];
 
-#pragma omp parallel for
 		for (int loop = 0; loop < 8; loop++)
 		{
 			int di = loop & 0b001;
