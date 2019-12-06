@@ -38,8 +38,6 @@
 
 #define ALLOWOUTOFBOUND
 
-constexpr auto ITER = 50;
-constexpr auto SPP = 4;
 
 
 __device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* localRandState)
@@ -129,6 +127,7 @@ int main(int argc, char* argv[])
 	QApplication a(argc, argv);
 	RTRendererCUDAQT window;
 	window.show();
+	window.discardParameter();
 	a.exec();
 }
 
@@ -196,7 +195,7 @@ void LoopThread::kernel()
 	checkCudaErrors(cudaMalloc((void**)&cudaList, num_Hittables * sizeof(Hittable*)));
 	Hittable** cudaWorld;
 	checkCudaErrors(cudaMalloc((void**)&cudaWorld, sizeof(Hittable*)));
-	Camera** cudaCam;
+	//Camera** cudaCam;
 	checkCudaErrors(cudaMalloc((void**)&cudaCam, sizeof(Camera*)));
 
 	float ms = float(clock() - StartTime);
@@ -251,38 +250,21 @@ void LoopThread::kernel()
 	printMsg(LogLevel::info, "\t|               |               |               |               |               |");
 	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+\033[A\r");
 
-	int frameCount = 0;
-	int break_ctrl = 1;
-	while (1)
+	this->frameCount = 0;
+	while (this->break_flag == 0)
 	{
 		renderTime = ms;
 
-		renderer <<<blocks, threads >>> (frameCount++, frameBuffer, cudaCam, cudaWorld, renderRandomStates);
+		renderer <<<blocks, threads >>> (this->frameCount++, frameBuffer, cudaCam, cudaWorld, renderRandomStates);
 
 
 		checkCudaErrors(cudaGetLastError());
 		checkCudaErrors(cudaDeviceSynchronize());
-
 		ms = float(clock() - StartTime);
 		renderTime = ms - renderTime;
 		clearLine();
-		printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * frameCount / (ms - renderStart),7, frameCount * SPP);
+		printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / this->frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * this->frameCount / (ms - renderStart),7, this->frameCount* SPP);
 
-		/*
-		M.data = (uchar*)frameBuffer;
-		cv::imshow("wow", M);
-		if (cv::waitKey(1) == 27) break;;
-		*/
-		
-		/*
-		for (int i = 0; i < 3 * MAX_X * MAX_Y; i++)
-		{
-			if (frameBuffer[i] >= 1)
-				ppm[i] = 255;
-			else
-				ppm[i] = frameBuffer[i] * 255.99;
-		}
-		*/
 
 		for (int i = 0; i < MAX_Y; i++)
 		{
@@ -291,27 +273,16 @@ void LoopThread::kernel()
 				int index = 3 * (i * MAX_X + j);
 				for (int k = 0; k < 3; k++)
 				{
-					ppm[index + k] = clip(1.0, 0.0, frameBuffer[index + 2 - k]) * 255.99;
+					ppm[index + k] = clip(this->targetClipUpperbound, 0.0, frameBuffer[index + 2 - k]) * (255.99/ this->targetClipUpperbound);
 				}
 			}
 		}
 		
 		emit refresh_flag();
 
-		if (this->break_flag == 1)
-		{
-			this->break_flag = 0;
-			break;
-		}
 
-		if (break_ctrl == this->pre_break)
-		{
-			break;
-		}
-		else
-		{
-			break_ctrl++;
-		}
+		checkBreak();
+		
 	}
 	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+");
 

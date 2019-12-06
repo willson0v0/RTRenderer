@@ -126,10 +126,11 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 
 	Vec3 lookfrom(13, 2, 3);
 	Vec3 lookat(0, 0, 0);
+	Vec3 vup(0, 1, 0);
 	float focusDist = (lookfrom - lookat).length() - 4;
 	float aperture = 0.1;
 	float fov = 30.0;
-	*camera = new Camera(MAX_X, MAX_Y, fov, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
+	*camera = new Camera(MAX_X, MAX_Y, fov, lookfrom, lookat, vup , aperture, focusDist);
 }
 
 __global__ void createCornellBox(Hittable** list, Hittable** world, Camera** camera, curandState* randState)

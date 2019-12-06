@@ -105,7 +105,6 @@ __host__ inline float randD()
 }
 
 //将这个函数变成GUI的
-//到时候照实说，LGZ写了函数原型，我将它改到GUI上
 
 template<typename... Arguments>
 __host__ __device__ void printMsg(LogLevel ll, const char* msg, Arguments... args)

@@ -10,7 +10,7 @@
 #include <qthread.h>
 #include <qtextedit.h>
 
-//extern void kernel();
+extern class Camera;
 
 //合并的话会发生什么？
 
@@ -24,9 +24,27 @@ public:
 		;
 		}
 	void kernel();
+	
+	
+	Camera** cudaCam;
+	
+	int frameCount;
+
 	int break_flag = 0;
-	int pre_break = 0;//默认是0，不依靠它提供break
+	bool reset_flag;
+
+
+	float targetClipUpperbound = 1.0;
+	int targetSPP = INT_MAX;//默认是最大值，不依靠它提供break
+
+	float lookatX = 0;
+	float lookatY = 0;
+	float lookatZ = 0;
+
 	void PrintMessege();
+	void showParameter();
+	void checkBreak();
+	
 protected:
 	void run();
 
@@ -34,6 +52,7 @@ signals:
 	void done();
 	void refresh_flag();
 	void info_flag();
+	void discard_flag();
 };
 
 
@@ -51,15 +70,21 @@ public slots:
 	void refresh();
 	void Stop();
 	void ShowPara();
+	void setParameter();
+	void discardParameter();
 	
 	
 private:
 	QPushButton* StartButton;
 	QPushButton* StopButton;
 	QLabel* Lab;
+	QLabel* labClipUpperbound;
+	QLabel* labTargetSPP;
 	QPushButton* Updater;
-	QTextEdit* ParameterText;
-	QLineEdit* Para_Stop;
+	QPushButton* Discarder;
+	QTextEdit* logText;
+	QLineEdit* paraTargetSPP;
+	QLineEdit* paraClipUpperbound;
 	Ui::RTRendererCUDAQTClass ui;
 };
 

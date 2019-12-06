@@ -24,7 +24,9 @@ constexpr auto MAX_Y = 768;
 constexpr auto BLK_X = 25;
 constexpr auto BLK_Y = 20;
 constexpr auto PI = 3.1415926535897932384626433832795;
-constexpr auto logLevel = LogLevel::info;
+constexpr auto logLevel = LogLevel::debug;
+constexpr auto ITER = 50;
+constexpr auto SPP = 4;
 
 
 constexpr auto ANSI_COLOR_RED = "\x1b[31m";
