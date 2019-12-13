@@ -68,7 +68,8 @@ __global__ void createCheckerTest(Hittable** list, Hittable** world, Camera** ca
 
 #undef RND
 #define RND (curand_uniform(randState))
-__global__ void createRandScene(Hittable** list, Hittable** world, Camera** camera, unsigned char* texture, int tx, int ty, curandState* randState)
+__global__ void createRandScene(Hittable** list, Hittable** world, Camera** camera, unsigned char* texture, int tx, int ty, curandState* randState,
+	Vec3 lookat)
 {
 	printMsg(LogLevel::info, "Using scene: Random balls.");
 
@@ -125,7 +126,7 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 	printMsg(LogLevel::debug, "Scene Loaded.");
 
 	Vec3 lookfrom(13, 2, 3);
-	Vec3 lookat(0, 0, 0);
+	//Vec3 lookat(0, 0, 0);
 	Vec3 vup(0, 1, 0);
 	float focusDist = (lookfrom - lookat).length() - 4;
 	float aperture = 0.1;

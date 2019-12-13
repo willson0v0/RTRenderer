@@ -112,13 +112,8 @@ __global__ void rander_init(curandState* randState)
 	curand_init(2019+pixel_index, 0, 0, &randState[pixel_index]);
 }
 
-void func()
-{
-	;
-}
 
 unsigned char* ppm = new unsigned char [MAX_X * MAX_Y * 3 + 10000];
-
 
 
 int main(int argc, char* argv[])
@@ -143,7 +138,9 @@ void RTRendererCUDAQT::refresh()
 
 void LoopThread::kernel()
 {
-	func();
+	while(this->end_flag == 0)
+	{
+
 	float renderTime;
 
 	printMsg(LogLevel::info, "Rendering a %d x %d image in %d x %d blocks", MAX_X, MAX_Y, BLK_X, BLK_Y);
@@ -196,7 +193,7 @@ void LoopThread::kernel()
 	Hittable** cudaWorld;
 	checkCudaErrors(cudaMalloc((void**)&cudaWorld, sizeof(Hittable*)));
 	//Camera** cudaCam;
-	checkCudaErrors(cudaMalloc((void**)&cudaCam, sizeof(Camera*)));
+	checkCudaErrors(cudaMalloc((void**) & (this->cudaCam), sizeof(Camera*)));
 
 	float ms = float(clock() - StartTime);
 	printMsg(LogLevel::info, "Alloc finished @ %lf ms", ms);
@@ -217,7 +214,9 @@ void LoopThread::kernel()
 	checkCudaErrors(cudaMalloc((void**)&t, sizeof(unsigned char) * em.rows * em.cols * 3));
 	checkCudaErrors(cudaMemcpy(t, em.data, sizeof(unsigned char) * em.rows * em.cols * 3, cudaMemcpyHostToDevice));
 
-	createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState);
+	Vec3 tLookat(this->lookatX, this->lookatY, this->lookatZ);
+
+	createRandScene << <1, 1 >> > (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState, tLookat);
 	// createWorld1 <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 	// createCheckerTest <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 	// createCornellBox <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
@@ -234,7 +233,7 @@ void LoopThread::kernel()
 
 	curandState* renderRandomStates;
 	checkCudaErrors(cudaMalloc((void**)&renderRandomStates, MAX_X * MAX_Y * sizeof(curandState)));
-	rander_init <<<blocks, threads >>> (renderRandomStates);
+	rander_init << <blocks, threads >> > (renderRandomStates);
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
 
@@ -255,7 +254,7 @@ void LoopThread::kernel()
 	{
 		renderTime = ms;
 
-		renderer <<<blocks, threads >>> (this->frameCount++, frameBuffer, cudaCam, cudaWorld, renderRandomStates);
+		renderer << <blocks, threads >> > (this->frameCount++, frameBuffer, this->cudaCam, cudaWorld, renderRandomStates);
 
 
 		checkCudaErrors(cudaGetLastError());
@@ -263,7 +262,7 @@ void LoopThread::kernel()
 		ms = float(clock() - StartTime);
 		renderTime = ms - renderTime;
 		clearLine();
-		printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / this->frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * this->frameCount / (ms - renderStart),7, this->frameCount* SPP);
+		printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / this->frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * this->frameCount / (ms - renderStart), 7, this->frameCount * SPP);
 
 
 		for (int i = 0; i < MAX_Y; i++)
@@ -273,20 +272,20 @@ void LoopThread::kernel()
 				int index = 3 * (i * MAX_X + j);
 				for (int k = 0; k < 3; k++)
 				{
-					ppm[index + k] = clip(this->targetClipUpperbound, 0.0, frameBuffer[index + 2 - k]) * (255.99/ this->targetClipUpperbound);
+					ppm[index + k] = clip(this->targetClipUpperbound, 0.0, frameBuffer[index + 2 - k]) * (255.99 / this->targetClipUpperbound);
 				}
 			}
 		}
-		
+
 		emit refresh_flag();
 
-
-		checkBreak();
-		
 	}
+	this->break_flag = 0;
+	
 	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+");
 
 	printMsg(LogLevel::debug, "Exec time: %lf ms. Saving result...", ms);
+
 
 	const char* fileName = "result.png";
 	cv::Mat output;
@@ -294,10 +293,14 @@ void LoopThread::kernel()
 	M *= 255.99;
 	M.convertTo(output, CV_8UC3);
 	cv::imwrite(fileName, output);
-
 	printMsg(LogLevel::info, "File saved at: \"%s\"", fileName);
+	
+
 	checkCudaErrors(cudaDeviceReset());
 	printMsg(LogLevel::debug, "Device reset finished.");
+
+	}
+	
 }
 
 

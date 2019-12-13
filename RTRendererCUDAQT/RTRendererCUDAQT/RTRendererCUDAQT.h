@@ -10,9 +10,11 @@
 #include <qthread.h>
 #include <qtextedit.h>
 
-extern class Camera;
 
-//合并的话会发生什么？
+extern class Camera;
+extern class Vec3;
+
+//统一flag为0正常，为1退出
 
 class LoopThread : public QThread
 {
@@ -27,19 +29,20 @@ public:
 	
 	
 	Camera** cudaCam;
-	
+	float lookatX;
+	float lookatY;
+	float lookatZ;
+
 	int frameCount;
 
-	int break_flag = 0;
-	bool reset_flag;
+	int break_flag;
+	int end_flag;
 
 
-	float targetClipUpperbound = 1.0;
-	int targetSPP = INT_MAX;//默认是最大值，不依靠它提供break
+	float targetClipUpperbound;
+	int targetSPP;
 
-	float lookatX = 0;
-	float lookatY = 0;
-	float lookatZ = 0;
+	
 
 	void PrintMessege();
 	void showParameter();
@@ -64,6 +67,7 @@ public:
 	RTRendererCUDAQT(QWidget* parent = Q_NULLPTR);
 	float clip_upperbound = 1;
 	LoopThread* looper;
+	void initialization();
 	
 public slots:
 	void Startear();
@@ -80,11 +84,17 @@ private:
 	QLabel* Lab;
 	QLabel* labClipUpperbound;
 	QLabel* labTargetSPP;
+	QLabel* labLookatX;
+	QLabel* labLookatY;
+	QLabel* labLookatZ;
 	QPushButton* Updater;
 	QPushButton* Discarder;
 	QTextEdit* logText;
 	QLineEdit* paraTargetSPP;
 	QLineEdit* paraClipUpperbound;
+	QLineEdit* paraLookatX;
+	QLineEdit* paraLookatY;
+	QLineEdit* paraLookatZ;
 	Ui::RTRendererCUDAQTClass ui;
 };
 
