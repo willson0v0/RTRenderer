@@ -38,7 +38,7 @@
 
 #define ALLOWOUTOFBOUND
 
-
+clock_t StartTime;
 
 __device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* localRandState)
 {
@@ -123,6 +123,7 @@ unsigned char* ppm = new unsigned char [MAX_X * MAX_Y * 3 + 10000];
 
 int main(int argc, char* argv[])
 {
+	StartTime = clock();
 	enableVTMode();
 	QApplication a(argc, argv);
 	RTRendererCUDAQT window;
@@ -217,11 +218,13 @@ void LoopThread::kernel()
 	checkCudaErrors(cudaMalloc((void**)&t, sizeof(unsigned char) * em.rows * em.cols * 3));
 	checkCudaErrors(cudaMemcpy(t, em.data, sizeof(unsigned char) * em.rows * em.cols * 3, cudaMemcpyHostToDevice));
 
-	createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState);
+	// createRandScene << <1, 1 >> > (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState);
+	// triMeshTest <<<1, 1 >>> (cudaList, cudaWorld, cudaCam);
 	// createWorld1 <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 	// createCheckerTest <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
-	// createCornellBox <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	createCornellBox <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 	// createCornellSmoke <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	
 
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
@@ -256,7 +259,6 @@ void LoopThread::kernel()
 		renderTime = ms;
 
 		renderer <<<blocks, threads >>> (this->frameCount++, frameBuffer, cudaCam, cudaWorld, renderRandomStates);
-
 
 		checkCudaErrors(cudaGetLastError());
 		checkCudaErrors(cudaDeviceSynchronize());

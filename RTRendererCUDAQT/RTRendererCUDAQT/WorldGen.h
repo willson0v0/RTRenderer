@@ -5,6 +5,7 @@
 #include "Material.h"
 #include "Sphere.h"
 #include "Rectangles.h"
+#include "Triangle.h"
 #include "Box.h"
 #include "Translation.h"
 #include "Volumes.h"
@@ -144,9 +145,10 @@ __global__ void createCornellBox(Hittable** list, Hittable** world, Camera** cam
 	list[i++] = new RectXZ(000, 555, 000, 555, 555, new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
 	list[i++] = new RectXZ(000, 555, 000, 555, 000, new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
 	list[i++] = new RectXY(000, 555, 000, 555, 555, new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
-
-	list[i++] = new Box(Vec3(0, 0, 0), Vec3(165, 165, 165), new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
-	list[i++] = new Box(Vec3(0, 0, 0), Vec3(165, 330, 165), new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
+//	list[i++] = new Box(Vec3(0, 0, 0), Vec3(165, 165, 165), new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
+//	list[i++] = new Box(Vec3(0, 0, 0), Vec3(165, 330, 165), new Lambertian(new ConstantTexture(0.73, 0.73, 0.73)));
+	list[i++] = new Box(Vec3(0, 0, 0), Vec3(165, 165, 165), new Dielectric(Vec3(1, 1, 1),1.5,0));
+	list[i++] = new Box(Vec3(0, 0, 0), Vec3(165, 330, 165), new Dielectric(Vec3(0.9, 0.9, 1), 1.5, 0));
 
 	list[0] = new FlipNorm(list[0]);
 	list[3] = new FlipNorm(list[3]);
@@ -158,6 +160,21 @@ __global__ void createCornellBox(Hittable** list, Hittable** world, Camera** cam
 	list[7] = new RotateY(list[7], 15);
 	list[7] = new Translate(list[7], Vec3(265, 0, 295));
 
+
+	int faces[12] = {
+		0,1,2,
+		0,1,3,
+		0,2,3,
+		1,2,3
+};
+	int nTriangle = 4;
+	Vec3 vertexs[4] = {
+		Vec3(260,260,0),
+		Vec3(300,260,0),
+		Vec3(280,294,0),
+		Vec3(280,280,60)
+	};
+	list[i++] = new TriangleMesh(faces, vertexs, 4, 4, new Dielectric(Vec3(0.1, 0.8, 1), 1.5, 0));
 
 #ifdef USE_BVH
 	* world = new BVH(list, i, randState);
@@ -218,4 +235,32 @@ __global__ void createCornellSmoke(Hittable** list, Hittable** world, Camera** c
 	float focusDist = (lookfrom - lookat).length();
 	float aperture = 0;
 	*camera = new Camera(MAX_X, MAX_Y, 40, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
+}
+
+__global__ void triMeshTest(Hittable** list, Hittable** world, Camera** camera)
+{
+	printMsg(LogLevel::info, "Using scene: Triangle test.");
+
+	int faces[12] = { 
+		0,1,2,
+		0,1,3,
+		0,2,3,
+		1,2,3 };
+	int nTriangle = 4;
+	Vec3 vertexs[4] = {
+		Vec3(0,0,0),
+		Vec3(2,0,0),
+		Vec3(1,1.7,0),
+		Vec3(1,1,1)
+	};
+
+	list[0] = new TriangleMesh(faces, vertexs, 4, 4, new Lambertian(new ConstantTexture(0.2, 0.2, 0.8)));
+
+	*world = new HittableList(list, 1);
+
+	Vec3 lookfrom(10, 0, 10);
+	Vec3 lookat(0, 0, 0);
+	float focusDist = (lookfrom - lookat).length();
+	float aperture = 0.05;
+	*camera = new Camera(MAX_X, MAX_Y, 60.0f, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }

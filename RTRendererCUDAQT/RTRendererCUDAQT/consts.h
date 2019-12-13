@@ -38,4 +38,3 @@ constexpr auto ANSI_COLOR_CYAN = "\x1b[36m";
 constexpr auto ANSI_COLOR_RESET = "\x1b[0m";
 
 __device__ __managed__ bool VTModeEnabled = false;
-__device__ __managed__ clock_t StartTime;
