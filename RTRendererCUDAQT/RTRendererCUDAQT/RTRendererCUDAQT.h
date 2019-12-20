@@ -12,7 +12,11 @@
 
 
 extern class Camera;
-extern class Vec3;
+
+struct para3
+{
+	float e[3];
+};
 
 //统一flag为0正常，为1退出
 
@@ -29,9 +33,12 @@ public:
 	
 	
 	Camera** cudaCam;
-	float lookatX;
-	float lookatY;
-	float lookatZ;
+	para3 Lookat;
+	para3 Lookfrom;
+	para3 Vup;
+	float FocusDist;
+	float Aperture;
+	float Fov;
 
 	int frameCount;
 
@@ -68,7 +75,8 @@ public:
 	float clip_upperbound = 1;
 	LoopThread* looper;
 	void initialization();
-	
+	void setLabel(int index,int x, int y, std::string name);
+	void setLabel(int index,int x, int y, std::string name,int length,int width);
 public slots:
 	void Startear();
 	void refresh();
@@ -79,14 +87,25 @@ public slots:
 	
 	
 private:
+	QLabel* labParameter[1];
+	QLineEdit* lineParameter[1];
 	QPushButton* StartButton;
 	QPushButton* StopButton;
 	QLabel* Lab;
-	QLabel* labClipUpperbound;
 	QLabel* labTargetSPP;
+	QLabel* labClipUpperbound;
 	QLabel* labLookatX;
 	QLabel* labLookatY;
 	QLabel* labLookatZ;
+	QLabel* labLookfromX;
+	QLabel* labLookfromY;
+	QLabel* labLookfromZ;
+	QLabel* labVupX;
+	QLabel* labVupY;
+	QLabel* labVupZ;
+	QLabel* labFocusDist;
+	QLabel* labAperture;
+	QLabel* labFov;
 	QPushButton* Updater;
 	QPushButton* Discarder;
 	QTextEdit* logText;
@@ -95,6 +114,15 @@ private:
 	QLineEdit* paraLookatX;
 	QLineEdit* paraLookatY;
 	QLineEdit* paraLookatZ;
+	QLineEdit* paraLookfromX;
+	QLineEdit* paraLookfromY;
+	QLineEdit* paraLookfromZ;
+	QLineEdit* paraVupX;
+	QLineEdit* paraVupY;
+	QLineEdit* paraVupZ;
+	QLineEdit* paraFocusDist;
+	QLineEdit* paraAperture;
+	QLineEdit* paraFov;
 	Ui::RTRendererCUDAQTClass ui;
 };
 

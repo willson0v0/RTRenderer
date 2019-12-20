@@ -138,16 +138,40 @@ void RTRendererCUDAQT::refresh()
 
 void LoopThread::kernel()
 {
+	float renderTime;
+	size_t* pValue = new size_t;
+	cv::Mat M(MAX_Y, MAX_X, CV_32FC3, cv::Scalar(0, 0, 0));
+	size_t frameBufferSize = 3 * MAX_X * MAX_Y * sizeof(float);
+	float* frameBuffer;
+	Hittable** cudaList;
+	Hittable** cudaWorld;
+	int num_Hittables = 500;
+	float ms;
+	curandState* worldGenRandState;
+	cv::Mat em;
+	unsigned char* t;
+	dim3 blocks(MAX_X / BLK_X + 1, MAX_Y / BLK_Y + 1);
+	dim3 threads(BLK_X, BLK_Y);
+	curandState* renderRandomStates;
+	Vec3 tLookat;
+	Vec3 tLookfrom;
+	Vec3 tVup;
+	float renderStart;
+	const char* fileName = "result.png";
+	cv::Mat output;
+	float tFocusDist;
+	float tAperture;
+	float tFov;
+
 	while(this->end_flag == 0)
 	{
-
-	float renderTime;
+	
 
 	printMsg(LogLevel::info, "Rendering a %d x %d image in %d x %d blocks", MAX_X, MAX_Y, BLK_X, BLK_Y);
 	printMsg(LogLevel::info, "SPP(per frame) = %d, depth = %d", SPP, ITER);
 	printMsg(LogLevel::info, "Current log level: %d", logLevel);
 
-	size_t* pValue = new size_t;
+	
 	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
 	printMsg(LogLevel::debug, "Stack size limit: \t\t%zu Byte.", *pValue);
 
@@ -181,27 +205,19 @@ void LoopThread::kernel()
 	printMsg(LogLevel::warning, "Compiled under debug mode. Performance is compromised.");
 #endif
 
-	cv::Mat M(MAX_Y, MAX_X, CV_32FC3, cv::Scalar(0, 0, 0));
-
-	size_t frameBufferSize = 3 * MAX_X * MAX_Y * sizeof(float);
-	float* frameBuffer;
+	
 	checkCudaErrors(cudaMallocManaged((void**)&frameBuffer, frameBufferSize));
-
-	Hittable** cudaList;
-	int num_Hittables = 500;
 	checkCudaErrors(cudaMalloc((void**)&cudaList, num_Hittables * sizeof(Hittable*)));
-	Hittable** cudaWorld;
+	
 	checkCudaErrors(cudaMalloc((void**)&cudaWorld, sizeof(Hittable*)));
-	//Camera** cudaCam;
 	checkCudaErrors(cudaMalloc((void**) & (this->cudaCam), sizeof(Camera*)));
 
-	float ms = float(clock() - StartTime);
+	ms = float(clock() - StartTime);
 	printMsg(LogLevel::info, "Alloc finished @ %lf ms", ms);
 
-	curandState* worldGenRandState;
 	checkCudaErrors(cudaMalloc((void**)&worldGenRandState, sizeof(curandState)));
 
-	cv::Mat em = cv::imread("earthmap.jpg");
+	em = cv::imread("earthmap.jpg");
 	if (em.rows < 1 || em.cols < 1)
 	{
 		printMsg(LogLevel::error, "Failed to find Earth texture(earthmap.jpg).");
@@ -210,17 +226,20 @@ void LoopThread::kernel()
 	{
 		printMsg(LogLevel::debug, "Texture loaded.");
 	}
-	unsigned char* t;
+	
 	checkCudaErrors(cudaMalloc((void**)&t, sizeof(unsigned char) * em.rows * em.cols * 3));
 	checkCudaErrors(cudaMemcpy(t, em.data, sizeof(unsigned char) * em.rows * em.cols * 3, cudaMemcpyHostToDevice));
 
-	Vec3 tLookat(this->lookatX, this->lookatY, this->lookatZ);
+	tLookat = Vec3(this->Lookat.e[0], this->Lookat.e[1], this->Lookat.e[2]);
+	tLookfrom = Vec3(this->Lookfrom.e[0], this->Lookfrom.e[1], this->Lookfrom.e[2]);
+	tVup = Vec3(this->Vup.e[0], this->Vup.e[1], this->Vup.e[2]);
+	tFocusDist = this->FocusDist;
+	tAperture = this->Aperture;
+	tFov = this->Fov;
 
-	createRandScene << <1, 1 >> > (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState, tLookat);
-	// createWorld1 <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
-	// createCheckerTest <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
-	// createCornellBox <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
-	// createCornellSmoke <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
+
+	createRandScene << <1, 1 >> > (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState,
+		tLookat, tLookfrom,tVup,tFocusDist,tAperture,tFov);
 
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
@@ -228,17 +247,14 @@ void LoopThread::kernel()
 	ms = float(clock() - StartTime);
 	printMsg(LogLevel::info, "World gen finished @ %lf ms", ms);
 
-	dim3 blocks(MAX_X / BLK_X + 1, MAX_Y / BLK_Y + 1);
-	dim3 threads(BLK_X, BLK_Y);
 
-	curandState* renderRandomStates;
 	checkCudaErrors(cudaMalloc((void**)&renderRandomStates, MAX_X * MAX_Y * sizeof(curandState)));
 	rander_init << <blocks, threads >> > (renderRandomStates);
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
 
 	ms = float(clock() - StartTime);
-	float renderStart = ms;
+	renderStart = ms;
 	printMsg(LogLevel::info, "Init renderer finished @ %lf ms", ms);
 
 	printMsg(LogLevel::info, "\t+-------------------------------------------------------------------------------+");
@@ -287,18 +303,21 @@ void LoopThread::kernel()
 	printMsg(LogLevel::debug, "Exec time: %lf ms. Saving result...", ms);
 
 
-	const char* fileName = "result.png";
-	cv::Mat output;
+	
 	M.data = (unsigned char *)frameBuffer;
 	M *= 255.99;
 	M.convertTo(output, CV_8UC3);
 	cv::imwrite(fileName, output);
 	printMsg(LogLevel::info, "File saved at: \"%s\"", fileName);
+
+	checkCudaErrors(cudaFree(frameBuffer));
+	checkCudaErrors(cudaFree(cudaList));
+	checkCudaErrors(cudaFree(cudaWorld));
+	checkCudaErrors(cudaFree((this->cudaCam)));
+	checkCudaErrors(cudaFree(worldGenRandState));
+	checkCudaErrors(cudaFree(t));
+	checkCudaErrors(cudaFree(renderRandomStates));
 	
-
-	checkCudaErrors(cudaDeviceReset());
-	printMsg(LogLevel::debug, "Device reset finished.");
-
 	}
 	
 }
