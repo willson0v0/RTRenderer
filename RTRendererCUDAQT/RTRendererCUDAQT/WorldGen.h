@@ -66,12 +66,14 @@ __global__ void createCheckerTest(Hittable** list, Hittable** world, Camera** ca
 	Vec3 lookat(0, 0, 0);
 	float focusDist = (lookfrom - lookat).length();
 	float aperture = 0.05;
-	*camera = new Camera(MAX_X, MAX_Y, 60.0f, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
+	float fov = 60.0f;
+	*camera = new Camera(MAX_X, MAX_Y, fov, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }
 
 #undef RND
 #define RND (curand_uniform(randState))
-__global__ void createRandScene(Hittable** list, Hittable** world, Camera** camera, unsigned char* texture, int tx, int ty, curandState* randState)
+__global__ void createRandScene(Hittable** list, Hittable** world, Camera** camera, unsigned char* texture, int tx, int ty, curandState* randState,
+	Vec3 lookat, Vec3 lookfrom, Vec3 vup, float focusDist, float aperture, float fov)
 {
 	printMsg(LogLevel::info, "Using scene: Random balls.");
 
@@ -127,12 +129,23 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 #endif
 	printMsg(LogLevel::debug, "Scene Loaded.");
 
+	/*
 	Vec3 lookfrom(13, 2, 3);
 	Vec3 lookat(0, 0, 0);
 	Vec3 vup(0, 1, 0);
 	float focusDist = (lookfrom - lookat).length() - 4;
 	float aperture = 0.1;
 	float fov = 30.0;
+	*/
+	/*
+	lookfrom = Vec3(13, 2, 3);
+	lookat = Vec3(0, 0, 0);
+	vup = Vec3(0, 1, 0);
+	*/
+	focusDist = (lookfrom - lookat).length() - 4;
+	aperture = 0.1;
+	fov = 30.0;
+
 	*camera = new Camera(MAX_X, MAX_Y, fov, lookfrom, lookat, vup , aperture, focusDist);
 }
 

@@ -10,9 +10,15 @@
 #include <qthread.h>
 #include <qtextedit.h>
 
+
 extern class Camera;
 
-//合并的话会发生什么？
+struct para3
+{
+	float e[3];
+};
+
+//统一flag为0正常，为1退出
 
 class LoopThread : public QThread
 {
@@ -27,19 +33,23 @@ public:
 	
 	
 	Camera** cudaCam;
-	
+	para3 Lookat;
+	para3 Lookfrom;
+	para3 Vup;
+	float FocusDist;
+	float Aperture;
+	float Fov;
+
 	int frameCount;
 
-	int break_flag = 0;
-	bool reset_flag;
+	int break_flag;
+	int end_flag;
 
 
-	float targetClipUpperbound = 1.0;
-	int targetSPP = INT_MAX;//默认是最大值，不依靠它提供break
+	float targetClipUpperbound;
+	int targetSPP;
 
-	float lookatX = 0;
-	float lookatY = 0;
-	float lookatZ = 0;
+	
 
 	void PrintMessege();
 	void showParameter();
@@ -64,7 +74,9 @@ public:
 	RTRendererCUDAQT(QWidget* parent = Q_NULLPTR);
 	float clip_upperbound = 1;
 	LoopThread* looper;
-	
+	void initialization();
+	void setLabel(int index,int x, int y, std::string name);
+	void setLabel(int index,int x, int y, std::string name,int length,int width);
 public slots:
 	void Startear();
 	void refresh();
@@ -75,16 +87,42 @@ public slots:
 	
 	
 private:
+	QLabel* labParameter[1];
+	QLineEdit* lineParameter[1];
 	QPushButton* StartButton;
 	QPushButton* StopButton;
 	QLabel* Lab;
-	QLabel* labClipUpperbound;
 	QLabel* labTargetSPP;
+	QLabel* labClipUpperbound;
+	QLabel* labLookatX;
+	QLabel* labLookatY;
+	QLabel* labLookatZ;
+	QLabel* labLookfromX;
+	QLabel* labLookfromY;
+	QLabel* labLookfromZ;
+	QLabel* labVupX;
+	QLabel* labVupY;
+	QLabel* labVupZ;
+	QLabel* labFocusDist;
+	QLabel* labAperture;
+	QLabel* labFov;
 	QPushButton* Updater;
 	QPushButton* Discarder;
 	QTextEdit* logText;
 	QLineEdit* paraTargetSPP;
 	QLineEdit* paraClipUpperbound;
+	QLineEdit* paraLookatX;
+	QLineEdit* paraLookatY;
+	QLineEdit* paraLookatZ;
+	QLineEdit* paraLookfromX;
+	QLineEdit* paraLookfromY;
+	QLineEdit* paraLookfromZ;
+	QLineEdit* paraVupX;
+	QLineEdit* paraVupY;
+	QLineEdit* paraVupZ;
+	QLineEdit* paraFocusDist;
+	QLineEdit* paraAperture;
+	QLineEdit* paraFov;
 	Ui::RTRendererCUDAQTClass ui;
 };
 
