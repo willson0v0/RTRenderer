@@ -15,8 +15,11 @@ extern class Camera;
 
 struct para3
 {
+	para3(float x0, float x1, float x2) { e[0] = x0; e[1] = x1; e[2] = x2; }
+	para3() {};
 	float e[3];
 };
+
 
 //统一flag为0正常，为1退出
 
@@ -31,7 +34,7 @@ public:
 		}
 	void kernel();
 	
-	
+	//Camera
 	Camera** cudaCam;
 	para3 Lookat;
 	para3 Lookfrom;
@@ -40,16 +43,19 @@ public:
 	float Aperture;
 	float Fov;
 
+
+	//Render
+	float targetClipUpperbound;
+	int targetSPP;
+
+
+	//World
+	float placeHolder;
+
 	int frameCount;
 
 	int break_flag;
 	int end_flag;
-
-
-	float targetClipUpperbound;
-	int targetSPP;
-
-	
 
 	void PrintMessege();
 	void showParameter();
@@ -74,9 +80,19 @@ public:
 	RTRendererCUDAQT(QWidget* parent = Q_NULLPTR);
 	float clip_upperbound = 1;
 	LoopThread* looper;
+	int paraNumCamere = 12;
+	int paraNumWorld = 1;
+	int paraNumRender = 2;
+	int changingNum;
+	QLabel** changingLab;
+	QLineEdit** changingLine;
+
+	void setLabelRender(int index,int x, int y, std::string name);
+	void setLabelWorld(int index, int x, int y, std::string name);
+	void setLabelCamera(int index, int x, int y, std::string name);
+	//void setLabel(int index,int x, int y, std::string name,int length,int width);
+	void hideAll();
 	void initialization();
-	void setLabel(int index,int x, int y, std::string name);
-	void setLabel(int index,int x, int y, std::string name,int length,int width);
 public slots:
 	void Startear();
 	void refresh();
@@ -84,13 +100,23 @@ public slots:
 	void ShowPara();
 	void setParameter();
 	void discardParameter();
-	
+	void changeParaCamera();
+	void changeParaWorld();
+	void changeParaRender();
+	void changePara();
 	
 private:
-	QLabel* labParameter[1];
-	QLineEdit* lineParameter[1];
+	QLabel* labParaCamera[12];
+	QLineEdit* lineParaCamera[12];
+	QLabel* labParaWorld[1];
+	QLineEdit* lineParaWorld[1];
+	QLabel* labParaRender[2];
+	QLineEdit* lineParaRender[2];
 	QPushButton* StartButton;
 	QPushButton* StopButton;
+	QPushButton* CameraButton;
+	QPushButton* WorldButton;
+	QPushButton* RenderButton;
 	QLabel* Lab;
 	QLabel* labTargetSPP;
 	QLabel* labClipUpperbound;

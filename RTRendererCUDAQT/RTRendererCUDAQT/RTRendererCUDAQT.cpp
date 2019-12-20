@@ -27,117 +27,79 @@ RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 	logText->setGeometry(MAX_X + 50, 20, 300, MAX_Y);
 
 	StartButton = new QPushButton("Start", this);
-	StartButton->setGeometry(MAX_X + 50,MAX_Y + 40 ,100 ,20 );
+	StartButton->setGeometry(MAX_X + 170,MAX_Y + 40 ,100 ,20 );
 
 	StopButton = new QPushButton("Stop", this);
-	StopButton->setGeometry(MAX_X + 50, MAX_Y + 80 , 100, 20);
+	StopButton->setGeometry(MAX_X + 170, MAX_Y + 80 , 100, 20);
 
 	Updater = new QPushButton("Update", this);
-	Updater->setGeometry(MAX_X + 50, MAX_Y + 120, 100, 20);
+	Updater->setGeometry(MAX_X + 170, MAX_Y + 120, 100, 20);
 
 	Discarder = new QPushButton("Discard", this);
-	Discarder->setGeometry(MAX_X + 50, MAX_Y + 160, 100, 20);
+	Discarder->setGeometry(MAX_X + 170, MAX_Y + 160, 100, 20);
+
+	CameraButton = new QPushButton("Camera", this);
+	CameraButton->setGeometry(MAX_X + 50, MAX_Y + 40, 100, 20);
+
+	WorldButton = new QPushButton("World", this);
+	WorldButton->setGeometry(MAX_X + 50, MAX_Y + 80, 100, 20);
+
+	RenderButton = new QPushButton("Render", this);
+	RenderButton->setGeometry(MAX_X + 50, MAX_Y + 120, 100, 20);
 
 
-	
-	paraTargetSPP = new QLineEdit(this);
-	paraClipUpperbound = new QLineEdit(this);
-	paraLookatX = new QLineEdit(this);
-	paraLookatY = new QLineEdit(this);
-	paraLookatZ = new QLineEdit(this);
+	setLabelRender(0, 20, MAX_Y + 40, "TargetSPP");
+	setLabelRender(1, 140, MAX_Y + 40, "ClipUpperbound");
 
-	paraLookfromX = new QLineEdit(this);
-	paraLookfromY = new QLineEdit(this);
-	paraLookfromZ = new QLineEdit(this);
-	paraVupX = new QLineEdit(this);
-	paraVupY = new QLineEdit(this);
-	paraVupZ = new QLineEdit(this);
-	paraFocusDist = new QLineEdit(this);
-	paraAperture = new QLineEdit(this);
-	paraFov = new QLineEdit(this);
+	setLabelCamera(0, 20, MAX_Y + 40, "LookatX");
+	setLabelCamera(1, 140, MAX_Y + 40, "LookatY");
+	setLabelCamera(2, 260, MAX_Y + 40, "LookatZ");
+	setLabelCamera(3, 20, MAX_Y + 80, "LookfromX");
+	setLabelCamera(4, 140, MAX_Y + 80, "LookfromY");
+	setLabelCamera(5, 260, MAX_Y + 80, "LookfromZ");
+	setLabelCamera(6, 20, MAX_Y + 120, "VupX");
+	setLabelCamera(7, 140, MAX_Y + 120, "VupY");
+	setLabelCamera(8, 260, MAX_Y + 120, "VupZ");
+	setLabelCamera(9, 20, MAX_Y + 160, "FocusDist");
+	setLabelCamera(10, 140, MAX_Y + 160, "Aperture");
+	setLabelCamera(11, 260, MAX_Y + 160, "Fov");
 
-
-
-	paraClipUpperbound->setGeometry(120, MAX_Y + 20, 80, 20);
-	paraTargetSPP->setGeometry(20, MAX_Y + 20, 80, 20);
-	paraLookatX->setGeometry(20, MAX_Y + 60, 80, 20);
-	paraLookatY->setGeometry(120, MAX_Y + 60, 80, 20);
-	paraLookatZ->setGeometry(220, MAX_Y + 60, 80, 20);
-
-	paraLookfromX->setGeometry(20, MAX_Y + 100, 80, 20);
-	paraLookfromY->setGeometry(120, MAX_Y + 100, 80, 20);
-	paraLookfromZ->setGeometry(220, MAX_Y + 100, 80, 20);
-	paraVupX->setGeometry(20, MAX_Y + 140, 80, 20);
-	paraVupY->setGeometry(120, MAX_Y + 140, 80, 20);
-	paraVupZ->setGeometry(220, MAX_Y + 140, 80, 20);
-	paraFocusDist->setGeometry(20, MAX_Y + 180, 80, 20);
-	paraAperture->setGeometry(120, MAX_Y + 180, 80, 20);
-	paraFov->setGeometry(220, MAX_Y + 180, 80, 20);
-	
-
-
-	labTargetSPP = new QLabel(this);
-	labClipUpperbound = new QLabel(this);
-	labLookatX = new QLabel(this);
-	labLookatY = new QLabel(this);
-	labLookatZ = new QLabel(this);
-
-	labLookfromX = new QLabel(this);
-	labLookfromY = new QLabel(this);
-	labLookfromZ = new QLabel(this);
-	labVupX = new QLabel(this);
-	labVupY = new QLabel(this);
-	labVupZ = new QLabel(this);
-	labFocusDist = new QLabel(this);
-	labAperture = new QLabel(this);
-	labFov = new QLabel(this);
-
-
-	labTargetSPP->setGeometry(20, MAX_Y + 40, 80, 20);
-	labClipUpperbound->setGeometry(120, MAX_Y + 40, 80, 20);
-	labLookatX->setGeometry(20, MAX_Y + 80, 80, 20);
-	labLookatY->setGeometry(120, MAX_Y + 80, 80, 20);
-	labLookatZ->setGeometry(220, MAX_Y + 80, 80, 20);
-
-
-	labLookfromX->setGeometry(20, MAX_Y + 120, 80, 20);
-	labLookfromY->setGeometry(120, MAX_Y + 120, 80, 20);
-	labLookfromZ->setGeometry(220, MAX_Y + 120, 80, 20);
-	labVupX->setGeometry(20, MAX_Y + 160, 80, 20);
-	labVupY->setGeometry(120, MAX_Y + 160, 80, 20);
-	labVupZ->setGeometry(220, MAX_Y + 160, 80, 20);
-	labFocusDist->setGeometry(20, MAX_Y + 200, 80, 20);
-	labAperture->setGeometry(120, MAX_Y + 200, 80, 20);
-	labFov->setGeometry(220, MAX_Y + 200, 80, 20);
-
-
-	labTargetSPP->setText("TargetSPP");
-	labClipUpperbound->setText("ClipUpperbound");
-	labLookatX->setText("LookatX");
-	labLookatY->setText("LookatY");
-	labLookatZ->setText("LookatZ");
-
-	labLookfromX->setText("LookfromX");
-	labLookfromY->setText("LookfromY");
-	labLookfromZ->setText("LookfromZ");
-	labVupX->setText("VupX");
-	labVupY->setText("VupY");
-	labVupZ->setText("VupZ");
-	labFocusDist->setText("FocusDist");
-	labAperture->setText("Aperture");
-	labFov->setText("Fov");
-
-
+	setLabelWorld(0, 20, MAX_Y + 40, "PlaceHolder");
 
 	looper = new LoopThread(this);
+
 	connect(StartButton, SIGNAL(clicked()), this, SLOT(Startear()));
 	connect(looper, SIGNAL(refresh_flag()), this, SLOT(refresh()));
 	connect(StopButton, SIGNAL(clicked()), this, SLOT(Stop()));
 	connect(Updater, SIGNAL(clicked()), this, SLOT(setParameter()));
 	connect(Discarder, SIGNAL(clicked()), this, SLOT(discardParameter()));
+	connect(CameraButton, SIGNAL(clicked()), this, SLOT(changeParaCamera()));
+	connect(WorldButton, SIGNAL(clicked()), this, SLOT(changeParaWorld()));
+	connect(RenderButton, SIGNAL(clicked()), this, SLOT(changeParaRender()));
+
+
+	initialization();
+
 }
 
+void RTRendererCUDAQT::initialization()
+{
+	this->looper->break_flag = 0;
+	this->looper->end_flag = 0;
+	this->looper->targetClipUpperbound = 1.0;
+	this->looper->targetSPP = INT_MAX;//默认是最大值，不依靠它提供break
 
+	this->looper->Lookat = para3(500, 500, 500);
+	this->looper->Lookfrom = para3(5000, 2000, 4000);
+	this->looper->Vup = para3(0,1,0);
+
+	this->looper->FocusDist = 5900;
+	this->looper->Aperture = 0.05;
+	this->looper->Fov = 50.0;
+
+	discardParameter();
+	hideAll();
+}
 
 void LoopThread::run()
 {
@@ -156,49 +118,96 @@ void LoopThread::checkBreak()
 	if (this->frameCount * SPP >= this->targetSPP)
 	{
 		this->break_flag = 1;
-		
 	}
 }
 
-void RTRendererCUDAQT::setLabel(int index, int x, int y, std::string name)
+void RTRendererCUDAQT::setLabelCamera(int index, int x, int y, std::string name)
 {
-	labParameter[index] = new QLabel(this);
-	lineParameter[index] = new  QLineEdit(this);
-	labParameter[index]->setGeometry(x, y, 80, 20);
+	labParaCamera[index] = new QLabel(this);
+	lineParaCamera[index] = new  QLineEdit(this);
+	labParaCamera[index]->setGeometry(x, y+20, 100, 20);
+	lineParaCamera[index]->setGeometry(x, y, 100, 20);
+	labParaCamera[index]->setText(QString::fromStdString(name));
+}
 
+void RTRendererCUDAQT::setLabelRender(int index, int x, int y, std::string name)
+{
+	labParaRender[index] = new QLabel(this);
+	lineParaRender[index] = new  QLineEdit(this);
+	labParaRender[index]->setGeometry(x, y + 20, 100, 20);
+	lineParaRender[index]->setGeometry(x, y, 100, 20);
+	labParaRender[index]->setText(QString::fromStdString(name));
+}
+
+void RTRendererCUDAQT::setLabelWorld(int index, int x, int y, std::string name)
+{
+	labParaWorld[index] = new QLabel(this);
+	lineParaWorld[index] = new  QLineEdit(this);
+	labParaWorld[index]->setGeometry(x, y + 20, 100, 20);
+	lineParaWorld[index]->setGeometry(x, y, 100, 20);
+	labParaWorld[index]->setText(QString::fromStdString(name));
 }
 
 
-void RTRendererCUDAQT::initialization()
+
+
+void RTRendererCUDAQT::hideAll()
 {
-	this->looper->break_flag = 0;
-	this->looper->end_flag = 0;
-	this->looper->targetClipUpperbound = 1.0;
-	this->looper->targetSPP = INT_MAX;//默认是最大值，不依靠它提供break
-
-	this->looper->Lookat.e[0] = 500;
-	this->looper->Lookat.e[1] = 500;
-	this->looper->Lookat.e[2] = 500;
-
-	this->looper->Lookfrom.e[0] = 5000.0;
-	this->looper->Lookfrom.e[1] = 2000.0;
-	this->looper->Lookfrom.e[2] = 4000.0;
-
-	this->looper->Vup.e[0] = 0;
-	this->looper->Vup.e[1] = 1.0;
-	this->looper->Vup.e[2] = 0;
-
-	this->looper->FocusDist = 5900;
-	this->looper->Aperture = 0.05;
-	this->looper->Fov = 50.0;
-
-
-	this->discardParameter();
+	for (int i = 0; i < paraNumCamere; i++)
+	{
+		labParaCamera[i]->hide();
+		lineParaCamera[i]->hide();
+	}
+	for (int i = 0; i < paraNumWorld; i++)
+	{
+		labParaWorld[i]->hide();
+		lineParaWorld[i]->hide();
+	}
+	for (int i = 0; i < paraNumRender; i++)
+	{
+		labParaRender[i]->hide();
+		lineParaRender[i]->hide();
+	}
 }
+
+void RTRendererCUDAQT::changeParaCamera()
+{
+	changingNum = paraNumCamere;
+	changingLab = labParaCamera;
+	changingLine = lineParaCamera;
+	changePara();
+}
+
+void RTRendererCUDAQT::changeParaWorld()
+{
+	changingNum = paraNumWorld;
+	changingLab = labParaWorld;
+	changingLine = lineParaWorld;
+	changePara();
+}
+
+void RTRendererCUDAQT::changeParaRender()
+{
+	changingNum = paraNumRender;
+	changingLab = labParaRender;
+	changingLine = lineParaRender;
+	changePara();
+}
+
+void RTRendererCUDAQT::changePara()
+{
+	hideAll();
+	for (int i = 0; i < changingNum; i++)
+	{
+		changingLab[i]->show();
+		changingLine[i]->show();
+	}
+}
+
+
 
 void RTRendererCUDAQT::Startear()
 {
-	this->initialization();
 	this->ShowPara();
 	looper->start();
 }
@@ -211,24 +220,26 @@ void RTRendererCUDAQT::Stop()
 
 void RTRendererCUDAQT::setParameter()
 {
-	this->looper->targetSPP = this->paraTargetSPP->text().toInt();
-	this->looper->targetClipUpperbound = this->paraClipUpperbound->text().toFloat();
+	this->looper->targetSPP = this->lineParaRender[0]->text().toInt();
+	this->looper->targetClipUpperbound = this->lineParaRender[1]->text().toFloat();
 
-	this->looper->Lookat.e[0] = this->paraLookatX->text().toFloat();
-	this->looper->Lookat.e[1] = this->paraLookatY->text().toFloat();
-	this->looper->Lookat.e[2] = this->paraLookatZ->text().toFloat();
+	this->looper->Lookat.e[0] = this->lineParaCamera[0]->text().toFloat();
+	this->looper->Lookat.e[1] = this->lineParaCamera[1]->text().toFloat();
+	this->looper->Lookat.e[2] = this->lineParaCamera[2]->text().toFloat();
 
-	this->looper->Lookfrom.e[0] = this->paraLookfromX->text().toFloat();
-	this->looper->Lookfrom.e[1] = this->paraLookfromY->text().toFloat();
-	this->looper->Lookfrom.e[2] = this->paraLookfromZ->text().toFloat();
+	this->looper->Lookfrom.e[0] = this->lineParaCamera[3]->text().toFloat();
+	this->looper->Lookfrom.e[1] = this->lineParaCamera[4]->text().toFloat();
+	this->looper->Lookfrom.e[2] = this->lineParaCamera[5]->text().toFloat();
 
-	this->looper->Vup.e[0] = this->paraVupX->text().toFloat();
-	this->looper->Vup.e[1] = this->paraVupY->text().toFloat();
-	this->looper->Vup.e[2] = this->paraVupZ->text().toFloat();
+	this->looper->Vup.e[0] = this->lineParaCamera[6]->text().toFloat();
+	this->looper->Vup.e[1] = this->lineParaCamera[7]->text().toFloat();
+	this->looper->Vup.e[2] = this->lineParaCamera[8]->text().toFloat();
 
-	this->looper->FocusDist = this->paraFocusDist->text().toInt();
-	this->looper->Aperture = this->paraAperture->text().toInt();
-	this->looper->Fov = this->paraFov->text().toInt();
+	this->looper->FocusDist = this->lineParaCamera[9]->text().toFloat();
+	this->looper->Aperture = this->lineParaCamera[10]->text().toFloat();
+	this->looper->Fov = this->lineParaCamera[11]->text().toFloat();
+
+	this->looper->placeHolder = this->lineParaWorld[0]->text().toFloat();
 
 	this->ShowPara();
 	this->looper->frameCount = 0;
@@ -242,6 +253,7 @@ void RTRendererCUDAQT::ShowPara()
 	this->logText->append(QString::fromStdString(str));
 	str = "Clip Upperbound =" + std::to_string(this->looper->targetClipUpperbound);
 	this->logText->append(QString::fromStdString(str));
+
 	str = "LookatX =" + std::to_string(this->looper->Lookat.e[0]);
 	this->logText->append(QString::fromStdString(str));
 	str = "LookatY =" + std::to_string(this->looper->Lookat.e[1]);
@@ -260,7 +272,6 @@ void RTRendererCUDAQT::ShowPara()
 	this->logText->append(QString::fromStdString(str));
 	str = "VupZ =" + std::to_string(this->looper->Vup.e[2]);
 	this->logText->append(QString::fromStdString(str));
-
 	str = "FocusDist =" + std::to_string(this->looper->FocusDist);
 	this->logText->append(QString::fromStdString(str));
 	str = "Aperture =" + std::to_string(this->looper->Aperture);
@@ -268,22 +279,28 @@ void RTRendererCUDAQT::ShowPara()
 	str = "Fov =" + std::to_string(this->looper->Fov);
 	this->logText->append(QString::fromStdString(str));
 
+	str = "Place Holder =" + std::to_string(this->looper->placeHolder);
+	this->logText->append(QString::fromStdString(str));
+
 }
 
 void RTRendererCUDAQT::discardParameter()
 {
-	this->paraTargetSPP->setText(QString::fromStdString(std::to_string(this->looper->targetSPP)));
-	this->paraClipUpperbound->setText(QString::fromStdString(std::to_string(this->looper->targetClipUpperbound)));
-	this->paraLookatX->setText(QString::fromStdString(std::to_string(this->looper->Lookat.e[0])));
-	this->paraLookatY->setText(QString::fromStdString(std::to_string(this->looper->Lookat.e[1])));
-	this->paraLookatZ->setText(QString::fromStdString(std::to_string(this->looper->Lookat.e[2])));
-	this->paraLookfromX->setText(QString::fromStdString(std::to_string(this->looper->Lookfrom.e[0])));
-	this->paraLookfromY->setText(QString::fromStdString(std::to_string(this->looper->Lookfrom.e[1])));
-	this->paraLookfromZ->setText(QString::fromStdString(std::to_string(this->looper->Lookfrom.e[2])));
-	this->paraVupX->setText(QString::fromStdString(std::to_string(this->looper->Vup.e[0])));
-	this->paraVupY->setText(QString::fromStdString(std::to_string(this->looper->Vup.e[1])));
-	this->paraVupZ->setText(QString::fromStdString(std::to_string(this->looper->Vup.e[2])));
-	this->paraFocusDist->setText(QString::fromStdString(std::to_string(this->looper->FocusDist)));
-	this->paraAperture->setText(QString::fromStdString(std::to_string(this->looper->Aperture)));
-	this->paraFov->setText(QString::fromStdString(std::to_string(this->looper->Fov)));
+	this->lineParaRender[0]->setText(QString::fromStdString(std::to_string(this->looper->targetSPP)));
+	this->lineParaRender[1]->setText(QString::fromStdString(std::to_string(this->looper->targetClipUpperbound)));
+
+	this->lineParaCamera[0]->setText(QString::fromStdString(std::to_string(this->looper->Lookat.e[0])));
+	this->lineParaCamera[1]->setText(QString::fromStdString(std::to_string(this->looper->Lookat.e[1])));
+	this->lineParaCamera[2]->setText(QString::fromStdString(std::to_string(this->looper->Lookat.e[2])));
+	this->lineParaCamera[3]->setText(QString::fromStdString(std::to_string(this->looper->Lookfrom.e[0])));
+	this->lineParaCamera[4]->setText(QString::fromStdString(std::to_string(this->looper->Lookfrom.e[1])));
+	this->lineParaCamera[5]->setText(QString::fromStdString(std::to_string(this->looper->Lookfrom.e[2])));
+	this->lineParaCamera[6]->setText(QString::fromStdString(std::to_string(this->looper->Vup.e[0])));
+	this->lineParaCamera[7]->setText(QString::fromStdString(std::to_string(this->looper->Vup.e[1])));
+	this->lineParaCamera[8]->setText(QString::fromStdString(std::to_string(this->looper->Vup.e[2])));
+	this->lineParaCamera[9]->setText(QString::fromStdString(std::to_string(this->looper->FocusDist)));
+	this->lineParaCamera[10]->setText(QString::fromStdString(std::to_string(this->looper->Aperture)));
+	this->lineParaCamera[11]->setText(QString::fromStdString(std::to_string(this->looper->Fov)));
+
+	this->lineParaWorld[0]->setText(QString::fromStdString(std::to_string(this->looper->placeHolder)));
 }

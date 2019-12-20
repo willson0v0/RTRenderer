@@ -239,7 +239,7 @@ void LoopThread::kernel()
 
 	// createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState, tLookat, tLookfrom,tVup,tFocusDist,tAperture,tFov);
 	meshTestHost(t, em.cols, em.rows, cudaList, cudaWorld);
-	camInit <<<1, 1 >>> (tLookat, tLookfrom, tVup, tFocusDist, tAperture, tFov, cudaCam);
+	camInit <<<1, 1 >>> (tLookat, tLookfrom, tVup, tFocusDist, tAperture, tFov, this->cudaCam);
 
 
 	checkCudaErrors(cudaGetLastError());
