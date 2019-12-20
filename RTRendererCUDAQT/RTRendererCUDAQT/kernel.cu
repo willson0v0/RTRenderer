@@ -222,8 +222,9 @@ void LoopThread::kernel()
 	// triMeshTest <<<1, 1 >>> (cudaList, cudaWorld, cudaCam);
 	// createWorld1 <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 	// createCheckerTest <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
-	createCornellBox <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	// createCornellBox <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
 	// createCornellSmoke <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, worldGenRandState);
+	meshTestHost(t, em.cols, em.rows, cudaList, cudaWorld, cudaCam);
 	
 
 	checkCudaErrors(cudaGetLastError());

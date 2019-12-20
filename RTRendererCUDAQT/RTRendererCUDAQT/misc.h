@@ -63,11 +63,11 @@ __device__ Vec3 randomVecInUnitDisk(curandState* localRandState)
 
 __device__ Vec3 randomVecInHemisphere(Vec3 axis, curandState* localRandState)
 {
-	Vec3 res;
-	do
+	Vec3 res = randomVecInUnitSphere(localRandState);
+	if (dot(res, axis) < 0.05)
 	{
-		res = randomVecInUnitSphere(localRandState);
-	} while (res.squaredLength() >= 1 || dot(res, axis) < 0.05);
+		res = -res;
+	}
 	return res;
 }
 

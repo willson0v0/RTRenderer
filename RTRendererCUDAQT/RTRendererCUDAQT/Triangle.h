@@ -99,7 +99,7 @@ public:
 		vertex = new Vec3[nVertex];
 		for (int i = 0; i < nVertex; i++)
 		{
-			vertex[i] = Vec3(vr[i]);
+			vertex[i] = vr[i];
 		}
 	}
 

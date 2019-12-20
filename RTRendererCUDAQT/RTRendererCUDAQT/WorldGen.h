@@ -11,6 +11,8 @@
 #include "Volumes.h"
 #include "HittableList.h"
 #include "BVH.h"
+#include <fstream>
+#include <vector>
 
 __global__ void generateCamera(Camera** cameraPtr, Vec3 lookFrom, Vec3 lookAt, Vec3 vup, float vfov,float aperture, float focusDist = -1)
 {
@@ -263,4 +265,65 @@ __global__ void triMeshTest(Hittable** list, Hittable** world, Camera** camera)
 	float focusDist = (lookfrom - lookat).length();
 	float aperture = 0.05;
 	*camera = new Camera(MAX_X, MAX_Y, 60.0f, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
+}
+
+__global__ void meshTest(unsigned char* texture, int tx, int ty, int* faces, Vec3* vertexs, int nface, int nvertex, Hittable** list, Hittable** world, Camera** camera)
+{
+	list[0] = new Sphere(Vec3(0, -5000.0, -1), 5000, new Lambertian(new ImageTexture(texture, tx, ty)));
+	list[1] = new TriangleMesh(faces, vertexs, nface, nvertex, new Lambertian(new ConstantTexture(0.8, 0.8, 0.8)));
+	list[2] = new Sphere(Vec3(1200, 1200, -1200), 300, new DiffuseLight(new ConstantTexture(10, 10, 10)));
+
+	*world = new HittableList(list, 3);
+
+	Vec3 lookfrom(5000, 2000, 4000);
+	Vec3 lookat(500, 500, 500);
+	float focusDist = (lookfrom - lookat).length();
+	float aperture = 0.05;
+	*camera = new Camera(MAX_X, MAX_Y, 50.0f, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
+}
+
+__host__ void meshTestHost(unsigned char* texture, int tx, int ty, Hittable** list, Hittable** world, Camera** camera)
+{
+	printMsg(LogLevel::info, "Loading mesh...");
+	std::ifstream lowPolyDeer("lowpolydeer.obj", std::ifstream::in);
+	std::vector<int> f;
+	std::vector<Vec3> v;
+	while (lowPolyDeer.good())
+	{
+		std::string a, b, c, d;
+		lowPolyDeer >> a >> b >> c >> d;
+		if (a == "v")
+		{
+			v.push_back(Vec3(std::stof(b), std::stof(c), std::stof(d)));
+			printMsg(LogLevel::extra, "vertex: %f, %f, %f", std::stof(b), std::stof(c), std::stof(d));
+		}
+		else if(a == "f")
+		{
+			f.push_back(std::stoi(b));
+			f.push_back(std::stoi(c));
+			f.push_back(std::stoi(d));
+			printMsg(LogLevel::extra, "face: %d, %d, %d", std::stoi(b), std::stoi(c), std::stoi(d));
+		}
+	}
+	printMsg(LogLevel::info, "3D file parsed with %d faces and %d vertexs.", f.size()/3, v.size());
+	int* fh = new int[f.size()], *faces;
+	Vec3* vh = new Vec3[v.size()], *vertexs;
+
+	checkCudaErrors(cudaMalloc((void**)&faces, sizeof(int) * f.size()));
+	checkCudaErrors(cudaMalloc((void**)&vertexs, sizeof(Vec3) * v.size()));
+
+	for (int i = 0; i < f.size(); i++)
+	{
+		fh[i] = f[i]-1;
+	}
+
+	for (int i = 0; i < v.size(); i++)
+	{
+		vh[i] = v[i];
+	}
+
+	checkCudaErrors(cudaMemcpy(faces, fh, sizeof(int) * f.size(), cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(vertexs, vh, sizeof(Vec3) * v.size(), cudaMemcpyHostToDevice));
+
+	meshTest <<<1, 1>>> (texture, tx, ty, faces, vertexs, f.size()/3, v.size(), list, world, camera);
 }
