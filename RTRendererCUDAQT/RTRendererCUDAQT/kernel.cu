@@ -38,7 +38,7 @@
 
 #define ALLOWOUTOFBOUND
 
-
+clock_t StartTime;
 
 __device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* localRandState)
 {
@@ -237,9 +237,10 @@ void LoopThread::kernel()
 	tAperture = this->Aperture;
 	tFov = this->Fov;
 
+	// createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState, tLookat, tLookfrom,tVup,tFocusDist,tAperture,tFov);
+	meshTestHost(t, em.cols, em.rows, cudaList, cudaWorld);
+	camInit <<<1, 1 >>> (tLookat, tLookfrom, tVup, tFocusDist, tAperture, tFov, cudaCam);
 
-	createRandScene << <1, 1 >> > (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState,
-		tLookat, tLookfrom,tVup,tFocusDist,tAperture,tFov);
 
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());

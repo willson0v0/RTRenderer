@@ -176,21 +176,21 @@ void RTRendererCUDAQT::initialization()
 	this->looper->targetClipUpperbound = 1.0;
 	this->looper->targetSPP = INT_MAX;//默认是最大值，不依靠它提供break
 
-	this->looper->Lookat.e[0] = 0;
-	this->looper->Lookat.e[1] = 0;
-	this->looper->Lookat.e[2] = 0;
+	this->looper->Lookat.e[0] = 500;
+	this->looper->Lookat.e[1] = 500;
+	this->looper->Lookat.e[2] = 500;
 
-	this->looper->Lookfrom.e[0] = 13.0;
-	this->looper->Lookfrom.e[1] = 2.0;
-	this->looper->Lookfrom.e[2] = 3.0;
+	this->looper->Lookfrom.e[0] = 5000.0;
+	this->looper->Lookfrom.e[1] = 2000.0;
+	this->looper->Lookfrom.e[2] = 4000.0;
 
 	this->looper->Vup.e[0] = 0;
 	this->looper->Vup.e[1] = 1.0;
 	this->looper->Vup.e[2] = 0;
 
-	this->looper->FocusDist = 9.5;
-	this->looper->Aperture = 0.1;
-	this->looper->Fov = 30.0;
+	this->looper->FocusDist = 5900;
+	this->looper->Aperture = 0.05;
+	this->looper->Fov = 50.0;
 
 
 	this->discardParameter();

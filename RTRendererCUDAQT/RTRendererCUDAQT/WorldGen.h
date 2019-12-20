@@ -280,22 +280,21 @@ __global__ void triMeshTest(Hittable** list, Hittable** world, Camera** camera)
 	*camera = new Camera(MAX_X, MAX_Y, 60.0f, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }
 
-__global__ void meshTest(unsigned char* texture, int tx, int ty, int* faces, Vec3* vertexs, int nface, int nvertex, Hittable** list, Hittable** world, Camera** camera)
+__global__ void meshTest(unsigned char* texture, int tx, int ty, int* faces, Vec3* vertexs, int nface, int nvertex, Hittable** list, Hittable** world)
 {
 	list[0] = new Sphere(Vec3(0, -5000.0, -1), 5000, new Lambertian(new ImageTexture(texture, tx, ty)));
 	list[1] = new TriangleMesh(faces, vertexs, nface, nvertex, new Lambertian(new ConstantTexture(0.8, 0.8, 0.8)));
 	list[2] = new Sphere(Vec3(1200, 1200, -1200), 300, new DiffuseLight(new ConstantTexture(10, 10, 10)));
 
 	*world = new HittableList(list, 3);
-
-	Vec3 lookfrom(5000, 2000, 4000);
-	Vec3 lookat(500, 500, 500);
-	float focusDist = (lookfrom - lookat).length();
-	float aperture = 0.05;
-	*camera = new Camera(MAX_X, MAX_Y, 50.0f, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }
 
-__host__ void meshTestHost(unsigned char* texture, int tx, int ty, Hittable** list, Hittable** world, Camera** camera)
+__global__ void camInit(Vec3 lookat, Vec3 lookfrom, Vec3 vup, float focusDist, float aperture, float fov, Camera** camera)
+{
+	*camera = new Camera(MAX_X, MAX_Y, fov, lookfrom, lookat, vup, aperture, focusDist);
+}
+
+__host__ void meshTestHost(unsigned char* texture, int tx, int ty, Hittable** list, Hittable** world)
 {
 	printMsg(LogLevel::info, "Loading mesh...");
 	std::ifstream lowPolyDeer("lowpolydeer.obj", std::ifstream::in);
@@ -338,5 +337,5 @@ __host__ void meshTestHost(unsigned char* texture, int tx, int ty, Hittable** li
 	checkCudaErrors(cudaMemcpy(faces, fh, sizeof(int) * f.size(), cudaMemcpyHostToDevice));
 	checkCudaErrors(cudaMemcpy(vertexs, vh, sizeof(Vec3) * v.size(), cudaMemcpyHostToDevice));
 
-	meshTest <<<1, 1>>> (texture, tx, ty, faces, vertexs, f.size()/3, v.size(), list, world, camera);
+	meshTest <<<1, 1>>> (texture, tx, ty, faces, vertexs, f.size()/3, v.size(), list, world);
 }
