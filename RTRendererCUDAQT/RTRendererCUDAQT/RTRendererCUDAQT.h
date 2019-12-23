@@ -9,16 +9,26 @@
 #include <qimage.h>
 #include <qthread.h>
 #include <qtextedit.h>
+#include <qcombobox.h>
+#include <qvariant.h>
+#include <QPainter>
+#include "consts.h"
+#include <string>
+#include <sstream>
+#include <algorithm>
+#include "Vec3.h"
 
 
 extern class Camera;
 
+/*
 struct para3
 {
 	para3(float x0, float x1, float x2) { e[0] = x0; e[1] = x1; e[2] = x2; }
 	para3() {};
 	float e[3];
 };
+*/
 
 
 //统一flag为0正常，为1退出
@@ -33,12 +43,14 @@ public:
 		;
 		}
 	void kernel();
+
+	
 	
 	//Camera
 	Camera** cudaCam;
-	para3 Lookat;
-	para3 Lookfrom;
-	para3 Vup;
+	Vec3* Lookat;
+	Vec3* Lookfrom;
+	Vec3* Vup;
 	float FocusDist;
 	float Aperture;
 	float Fov;
@@ -106,6 +118,7 @@ public slots:
 	void changePara();
 	
 private:
+	QComboBox* Parameter;
 	QLabel* labParaCamera[12];
 	QLineEdit* lineParaCamera[12];
 	QLabel* labParaWorld[1];

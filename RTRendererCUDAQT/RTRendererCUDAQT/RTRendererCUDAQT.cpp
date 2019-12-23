@@ -48,6 +48,7 @@ RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 	RenderButton->setGeometry(MAX_X + 50, MAX_Y + 120, 100, 20);
 
 
+
 	setLabelRender(0, 20, MAX_Y + 40, "TargetSPP");
 	setLabelRender(1, 140, MAX_Y + 40, "ClipUpperbound");
 
