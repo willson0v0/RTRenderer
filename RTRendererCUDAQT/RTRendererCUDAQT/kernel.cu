@@ -26,8 +26,7 @@
 
 #include "RTRendererCUDAQT.h"
 #include <QtWidgets/QApplication>
-
-
+#include <QComboBox>
 
 #include <QtCore/QDebug>
 #include <QtGui/QImage>
@@ -61,16 +60,13 @@ RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 	Discarder = new QPushButton("Discard", this);
 	Discarder->setGeometry(MAX_X + 170, MAX_Y + 160, 100, 20);
 
-	CameraButton = new QPushButton("Camera", this);
-	CameraButton->setGeometry(MAX_X + 50, MAX_Y + 40, 100, 20);
+	Parameter = new QComboBox(this);
+	Parameter->setGeometry(MAX_X + 50, MAX_Y + 40, 100, 20);
 
-	WorldButton = new QPushButton("World", this);
-	WorldButton->setGeometry(MAX_X + 50, MAX_Y + 80, 100, 20);
-
-	RenderButton = new QPushButton("Render", this);
-	RenderButton->setGeometry(MAX_X + 50, MAX_Y + 120, 100, 20);
-
-
+	Parameter->addItem(QString::fromStdString("ParaChoice"));
+	Parameter->addItem(QString::fromStdString("Camera"));
+	Parameter->addItem(QString::fromStdString("World"));
+	Parameter->addItem(QString::fromStdString("Render"));
 
 	setLabelRender(0, 20, MAX_Y + 40, "TargetSPP");
 	setLabelRender(1, 140, MAX_Y + 40, "ClipUpperbound");
@@ -97,14 +93,13 @@ RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 	connect(StopButton, SIGNAL(clicked()), this, SLOT(Stop()));
 	connect(Updater, SIGNAL(clicked()), this, SLOT(setParameter()));
 	connect(Discarder, SIGNAL(clicked()), this, SLOT(discardParameter()));
-	connect(CameraButton, SIGNAL(clicked()), this, SLOT(changeParaCamera()));
-	connect(WorldButton, SIGNAL(clicked()), this, SLOT(changeParaWorld()));
-	connect(RenderButton, SIGNAL(clicked()), this, SLOT(changeParaRender()));
+	connect(Parameter, SIGNAL(activated(int)), this, SLOT(choosePara(int)));
 
 
 	initialization();
 
 }
+
 
 void RTRendererCUDAQT::initialization()
 {
@@ -142,6 +137,22 @@ void LoopThread::checkBreak()
 	if (this->frameCount * SPP >= this->targetSPP)
 	{
 		this->break_flag = 1;
+	}
+}
+
+void RTRendererCUDAQT::choosePara(int index)
+{
+	switch (index)
+	{
+	case 1:
+		changeParaCamera();
+		break;
+	case 2:
+		changeParaWorld();
+		break;
+	case 3:
+		changeParaRender();
+		break;
 	}
 }
 
