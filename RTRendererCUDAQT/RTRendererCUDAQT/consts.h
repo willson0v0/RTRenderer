@@ -29,6 +29,12 @@ constexpr auto ITER = 50;
 constexpr auto SPP = 4;
 
 
+constexpr auto CAMERA_NUM = 12;
+constexpr auto WORLD_NUM = 1;
+constexpr auto RENDER_NUM = 2;
+constexpr auto OBJECT_NUM = 1;
+
+
 constexpr auto ANSI_COLOR_RED = "\x1b[31m";
 constexpr auto ANSI_COLOR_GREEN = "\x1b[32m";
 constexpr auto ANSI_COLOR_YELLOW = "\x1b[33m";

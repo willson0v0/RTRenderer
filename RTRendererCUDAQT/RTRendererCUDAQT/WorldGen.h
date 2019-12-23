@@ -294,13 +294,13 @@ __global__ void camInit(Vec3 lookat, Vec3 lookfrom, Vec3 vup, float focusDist, f
 	*camera = new Camera(MAX_X, MAX_Y, fov, lookfrom, lookat, vup, aperture, focusDist);
 }
 
-__host__ void meshTestHost(unsigned char* texture, int tx, int ty, Hittable** list, Hittable** world)
+__host__ void meshTestHost(unsigned char* texture, int tx, int ty, Hittable** list, Hittable** world, int* allow)
 {
 	printMsg(LogLevel::info, "Loading mesh...");
 	std::ifstream lowPolyDeer("lowpolydeer.obj", std::ifstream::in);
 	std::vector<int> f;
 	std::vector<Vec3> v;
-	while (lowPolyDeer.good())
+	while (lowPolyDeer.good() && allow[0] == 1)
 	{
 		std::string a, b, c, d;
 		lowPolyDeer >> a >> b >> c >> d;

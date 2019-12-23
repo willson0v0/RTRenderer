@@ -17,6 +17,7 @@
 #include <sstream>
 #include <algorithm>
 #include "Vec3.h"
+#include <qmouseeventtransition.h>
 
 
 extern class Camera;
@@ -36,7 +37,8 @@ public:
 	void kernel();
 
 	
-	
+	int flag_show[OBJECT_NUM];
+
 	//Camera
 	Camera** cudaCam;
 	Vec3* Lookat;
@@ -72,7 +74,9 @@ signals:
 	void refresh_flag();
 	void info_flag();
 	void discard_flag();
+	
 };
+
 
 
 class RTRendererCUDAQT : public QMainWindow
@@ -87,14 +91,17 @@ public:
 	int paraNumWorld = 1;
 	int paraNumRender = 2;
 	int changingNum;
+	int selected;
 	QLabel** changingLab;
 	QLineEdit** changingLine;
 
 	void setLabelRender(int index,int x, int y, std::string name);
 	void setLabelWorld(int index, int x, int y, std::string name);
 	void setLabelCamera(int index, int x, int y, std::string name);
+	void addObject(int index, int x, int y, std::string name);
 	void hideAll();
 	void initialization();
+	
 public slots:
 	void Startear();
 	void refresh();
@@ -105,18 +112,30 @@ public slots:
 	void changeParaCamera();
 	void changeParaWorld();
 	void changeParaRender();
+	void changeObjectWorld();
 	void changePara();
 	void choosePara(int index);
+	void chooseObject(int index);
+	void disappear();
+	void appear();
+	void showObject();
 	
 private:
 	QLabel* Lab;
 	QComboBox* Parameter;
-	QLabel* labParaCamera[12];
-	QLineEdit* lineParaCamera[12];
-	QLabel* labParaWorld[1];
-	QLineEdit* lineParaWorld[1];
-	QLabel* labParaRender[2];
-	QLineEdit* lineParaRender[2];
+	QComboBox* World;
+	QLabel* labParaCamera[CAMERA_NUM];
+	QLineEdit* lineParaCamera[CAMERA_NUM];
+	QLabel* labParaWorld[WORLD_NUM];
+	QLineEdit* lineParaWorld[WORLD_NUM];
+	QLabel* labParaRender[RENDER_NUM];
+	QLineEdit* lineParaRender[RENDER_NUM];
+	QLineEdit* lineObjectName;
+	QLabel* labObjectName;
+	QLineEdit* lineObjectStatus;
+	QLabel* labObjectStatus;
+	QPushButton* buttonObjectWorldAppear;
+	QPushButton* buttonObjectWorldDisappear;
 	QPushButton* StartButton;
 	QPushButton* StopButton;
 	QPushButton* Updater;

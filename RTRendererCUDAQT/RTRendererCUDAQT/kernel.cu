@@ -36,6 +36,7 @@
 
 
 
+
 RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 	: QMainWindow(parent)
 {
@@ -49,24 +50,55 @@ RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 	logText->setGeometry(MAX_X + 50, 20, 300, MAX_Y);
 
 	StartButton = new QPushButton("Start", this);
-	StartButton->setGeometry(MAX_X + 170, MAX_Y + 40, 100, 20);
+	StartButton->setGeometry(MAX_X + 220, MAX_Y + 40, 150, 20);
 
 	StopButton = new QPushButton("Stop", this);
-	StopButton->setGeometry(MAX_X + 170, MAX_Y + 80, 100, 20);
+	StopButton->setGeometry(MAX_X + 220, MAX_Y + 80, 150, 20);
 
 	Updater = new QPushButton("Update", this);
-	Updater->setGeometry(MAX_X + 170, MAX_Y + 120, 100, 20);
+	Updater->setGeometry(MAX_X + 220, MAX_Y + 120, 150, 20);
 
 	Discarder = new QPushButton("Discard", this);
-	Discarder->setGeometry(MAX_X + 170, MAX_Y + 160, 100, 20);
+	Discarder->setGeometry(MAX_X + 220, MAX_Y + 160, 150, 20);
 
 	Parameter = new QComboBox(this);
-	Parameter->setGeometry(MAX_X + 50, MAX_Y + 40, 100, 20);
+	Parameter->setGeometry(MAX_X + 50, MAX_Y + 40, 150, 20);
 
-	Parameter->addItem(QString::fromStdString("ParaChoice"));
+	Parameter->addItem(QString::fromStdString("Parameter"));
 	Parameter->addItem(QString::fromStdString("Camera"));
 	Parameter->addItem(QString::fromStdString("World"));
 	Parameter->addItem(QString::fromStdString("Render"));
+	Parameter->addItem(QString::fromStdString("Object"));
+
+	World = new QComboBox(this);
+	World->setGeometry(MAX_X + 50, MAX_Y + 80, 150, 20);
+	World->addItem(QString::fromStdString("ObjectList"));
+	World->addItem(QString::fromStdString("Deer"));
+
+	lineObjectName = new QLineEdit(this);
+	lineObjectName->setGeometry(20, MAX_Y + 20, 100, 20);
+
+	labObjectName = new QLabel(this);
+	labObjectName->setGeometry(20, MAX_Y + 40, 100, 20);
+	labObjectName->setText(QString::fromStdString("ObjectName"));
+
+	lineObjectStatus = new QLineEdit(this);
+	lineObjectStatus->setGeometry(20, MAX_Y + 80, 100, 20);
+
+	labObjectStatus = new QLabel(this);
+	labObjectStatus->setGeometry(20, MAX_Y + 100, 100, 20);
+	labObjectStatus->setText(QString::fromStdString("ObjectStatus"));
+
+	buttonObjectWorldAppear = new QPushButton(this);
+	buttonObjectWorldAppear->setGeometry(20, MAX_Y + 140, 100, 20);
+	buttonObjectWorldAppear->setText(QString::fromStdString("Appear"));
+
+	buttonObjectWorldDisappear = new QPushButton(this);
+	buttonObjectWorldDisappear->setGeometry(20, MAX_Y + 180, 100, 20);
+	buttonObjectWorldDisappear->setText(QString::fromStdString("Disappear"));
+
+
+
 
 	setLabelRender(0, 20, MAX_Y + 40, "TargetSPP");
 	setLabelRender(1, 140, MAX_Y + 40, "ClipUpperbound");
@@ -94,10 +126,12 @@ RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 	connect(Updater, SIGNAL(clicked()), this, SLOT(setParameter()));
 	connect(Discarder, SIGNAL(clicked()), this, SLOT(discardParameter()));
 	connect(Parameter, SIGNAL(activated(int)), this, SLOT(choosePara(int)));
-
+	connect(World, SIGNAL(activated(int)), this, SLOT(chooseObject(int)));
+	connect(buttonObjectWorldDisappear, SIGNAL(clicked()), this, SLOT(disappear()));
+	connect(buttonObjectWorldAppear, SIGNAL(clicked()), this, SLOT(appear()));
 
 	initialization();
-
+	
 }
 
 
@@ -116,6 +150,10 @@ void RTRendererCUDAQT::initialization()
 	this->looper->Aperture = 0.05;
 	this->looper->Fov = 50.0;
 
+
+	for (int i = 0; i <= OBJECT_NUM; i++)
+		this->looper->flag_show[i] = 1;
+
 	discardParameter();
 	hideAll();
 }
@@ -126,7 +164,6 @@ void LoopThread::run()
 }
 
 
-//给自己加个模板，还有其他一些东西。
 void LoopThread::PrintMessege()
 {
 	emit info_flag();
@@ -153,8 +190,61 @@ void RTRendererCUDAQT::choosePara(int index)
 	case 3:
 		changeParaRender();
 		break;
+	case 4:
+		changeObjectWorld();
+		break;
 	}
 }
+
+void RTRendererCUDAQT::disappear()
+{
+	this->looper->flag_show[this->selected] = 0;
+	showObject();
+	setParameter();
+}
+
+void RTRendererCUDAQT::appear()
+{
+	this->looper->flag_show[this->selected] = 1;
+	showObject();
+	setParameter();
+}
+
+
+void RTRendererCUDAQT::changeObjectWorld()
+{
+	hideAll();
+	labObjectName->show();
+	lineObjectName->show();
+	labObjectStatus->show();
+	lineObjectStatus->show();
+	buttonObjectWorldAppear->show();
+	buttonObjectWorldDisappear->show();
+	World->show();
+
+}
+
+
+void RTRendererCUDAQT::showObject()
+{
+	lineObjectName->setText(this->World->currentText());
+	if (this->looper->flag_show[this->selected])
+		lineObjectStatus->setText(QString::fromStdString("Show"));
+	else
+		lineObjectStatus->setText(QString::fromStdString("Hidden"));
+}
+
+
+void RTRendererCUDAQT::chooseObject(int index)
+{
+	selected = index-1;
+	showObject();
+	changeObjectWorld();
+}
+
+
+
+
 
 void RTRendererCUDAQT::setLabelCamera(int index, int x, int y, std::string name)
 {
@@ -185,7 +275,6 @@ void RTRendererCUDAQT::setLabelWorld(int index, int x, int y, std::string name)
 
 
 
-
 void RTRendererCUDAQT::hideAll()
 {
 	for (int i = 0; i < paraNumCamere; i++)
@@ -203,6 +292,14 @@ void RTRendererCUDAQT::hideAll()
 		labParaRender[i]->hide();
 		lineParaRender[i]->hide();
 	}
+
+		labObjectName->hide();
+		lineObjectName->hide();
+		labObjectStatus->hide();
+		lineObjectStatus->hide();
+		buttonObjectWorldAppear->hide();
+		buttonObjectWorldDisappear->hide();
+		World->hide();
 }
 
 void RTRendererCUDAQT::changeParaCamera()
@@ -479,6 +576,7 @@ void LoopThread::kernel()
 	float tFocusDist;
 	float tAperture;
 	float tFov;
+	int* allow = this->flag_show;
 
 	while(this->end_flag == 0)
 	{
@@ -553,9 +651,10 @@ void LoopThread::kernel()
 	tFocusDist = this->FocusDist;
 	tAperture = this->Aperture;
 	tFov = this->Fov;
+	
 
 	// createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState, tLookat, tLookfrom,tVup,tFocusDist,tAperture,tFov);
-	meshTestHost(t, em.cols, em.rows, cudaList, cudaWorld);
+	meshTestHost(t, em.cols, em.rows, cudaList, cudaWorld,allow);
 	camInit <<<1, 1 >>> (tLookat, tLookfrom, tVup, tFocusDist, tAperture, tFov, this->cudaCam);
 
 
@@ -627,7 +726,6 @@ void LoopThread::kernel()
 	M.convertTo(output, CV_8UC3);
 	cv::imwrite(fileName, output);
 	printMsg(LogLevel::info, "File saved at: \"%s\"", fileName);
-
 	checkCudaErrors(cudaFree(frameBuffer));
 	checkCudaErrors(cudaFree(cudaList));
 	checkCudaErrors(cudaFree(cudaWorld));
