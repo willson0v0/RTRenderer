@@ -8,6 +8,24 @@
 #include <sstream>
 #include <algorithm>
 
+void LoopThread::run()
+{
+	kernel();
+}
+
+
+void LoopThread::PrintMessege()
+{
+	emit info_flag();
+}
+
+void LoopThread::checkBreak()
+{
+	if (this->frameCount * SPP >= this->targetSPP)
+	{
+		this->break_flag = 1;
+	}
+}
 
 
 
@@ -16,6 +34,8 @@ RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 {
 	ui.setupUi(this);
 	setGeometry(10, 10, MAX_X + 400, MAX_Y + 400);
+
+	looper = new LoopThread(this);
 
 	Lab = new QLabel(this);
 	Lab->setGeometry(20, 20, MAX_X, MAX_Y);
@@ -26,14 +46,17 @@ RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 	StartButton = new QPushButton("Start", this);
 	StartButton->setGeometry(MAX_X + 220, MAX_Y + 40, 150, 20);
 
-	StopButton = new QPushButton("Stop", this);
-	StopButton->setGeometry(MAX_X + 220, MAX_Y + 80, 150, 20);
+	ExitButton = new QPushButton("Exit", this);
+	ExitButton->setGeometry(MAX_X + 220, MAX_Y + 80, 150, 20);
+
+	PauseButton = new QPushButton("Pause", this);
+	PauseButton->setGeometry(MAX_X + 220, MAX_Y + 120, 150, 20);
 
 	Updater = new QPushButton("Update", this);
-	Updater->setGeometry(MAX_X + 220, MAX_Y + 120, 150, 20);
+	Updater->setGeometry(MAX_X + 220, MAX_Y + 160, 150, 20);
 
 	Discarder = new QPushButton("Discard", this);
-	Discarder->setGeometry(MAX_X + 220, MAX_Y + 160, 150, 20);
+	Discarder->setGeometry(MAX_X + 220, MAX_Y + 200, 150, 20);
 
 	Parameter = new QComboBox(this);
 	Parameter->setGeometry(MAX_X + 50, MAX_Y + 40, 150, 20);
@@ -47,7 +70,11 @@ RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 	World = new QComboBox(this);
 	World->setGeometry(MAX_X + 50, MAX_Y + 80, 150, 20);
 	World->addItem(QString::fromStdString("ObjectList"));
-	World->addItem(QString::fromStdString("Deer"));
+
+	this->looper->object_names[0] = "deer";
+
+	for(int i=0;i<OBJECT_NUM;i++)
+		World->addItem(QString::fromStdString(this->looper->object_names[i]));
 
 	lineObjectName = new QLineEdit(this);
 	lineObjectName->setGeometry(20, MAX_Y + 20, 100, 20);
@@ -92,11 +119,12 @@ RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 
 	setLabelWorld(0, 20, MAX_Y + 40, "PlaceHolder");
 
-	looper = new LoopThread(this);
+	
 
 	connect(StartButton, SIGNAL(clicked()), this, SLOT(Startear()));
 	connect(looper, SIGNAL(refresh_flag()), this, SLOT(refresh()));
-	connect(StopButton, SIGNAL(clicked()), this, SLOT(Stop()));
+	connect(ExitButton, SIGNAL(clicked()), this, SLOT(Stop()));
+	connect(PauseButton, SIGNAL(clicked()), this, SLOT(Pause()));
 	connect(Updater, SIGNAL(clicked()), this, SLOT(setParameter()));
 	connect(Discarder, SIGNAL(clicked()), this, SLOT(discardParameter()));
 	connect(Parameter, SIGNAL(activated(int)), this, SLOT(choosePara(int)));
@@ -113,6 +141,7 @@ void RTRendererCUDAQT::initialization()
 {
 	this->looper->break_flag = 0;
 	this->looper->end_flag = 0;
+	this->looper->pause_flag = 0;
 	this->looper->targetClipUpperbound = 1.0;
 	this->looper->targetSPP = INT_MAX;//默认是最大值，不依靠它提供break
 
@@ -125,32 +154,23 @@ void RTRendererCUDAQT::initialization()
 	this->looper->Fov = 50.0;
 
 
-	for (int i = 0; i <= OBJECT_NUM; i++)
+	for (int i = 0; i < OBJECT_NUM; i++)
 		this->looper->flag_show[i] = 1;
 
 	discardParameter();
 	hideAll();
 }
 
-void LoopThread::run()
+
+void RTRendererCUDAQT::Pause()
 {
-	kernel();
+	if (this->looper->pause_flag == 1)
+		this->looper->pause_flag = 0;
+	else
+		this->looper->pause_flag = 1;
 }
 
-
-void LoopThread::PrintMessege()
-{
-	emit info_flag();
-}
-
-void LoopThread::checkBreak()
-{
-	if (this->frameCount * SPP >= this->targetSPP)
-	{
-		this->break_flag = 1;
-	}
-}
-
+//根据下拉菜单返回的index决定显示的参数
 void RTRendererCUDAQT::choosePara(int index)
 {
 	switch (index)
@@ -324,6 +344,7 @@ void RTRendererCUDAQT::Stop()
 	this->looper->end_flag = 1;
 }
 
+//设置参数。将窗口输入的数值对应赋值给各参数
 void RTRendererCUDAQT::setParameter()
 {
 	this->looper->targetSPP = this->lineParaRender[0]->text().toInt();
@@ -359,6 +380,7 @@ void RTRendererCUDAQT::setParameter()
 
 }
 
+//在log显示参数
 void RTRendererCUDAQT::ShowPara()
 {
 	std::string str = "SPP Threshold =" + std::to_string(this->looper->targetSPP);
@@ -392,6 +414,18 @@ void RTRendererCUDAQT::ShowPara()
 	this->logText->append(QString::fromStdString(str));
 
 	str = "Place Holder =" + std::to_string(this->looper->placeHolder);
+	this->logText->append(QString::fromStdString(str));
+
+	
+	for (int i = 0; i < OBJECT_NUM; i++)
+	{
+		str = this->looper->object_names[i] + "'s status : ";
+		if (this->looper->flag_show[i] == 1)
+			str += "show";
+		else
+			str += "hidden";
+	}
+	
 	this->logText->append(QString::fromStdString(str));
 
 	this->discardParameter();

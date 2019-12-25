@@ -36,8 +36,12 @@ public:
 		}
 	void kernel();
 
-	
+	//对应每个物体是否显示
 	int flag_show[OBJECT_NUM];
+
+	std::string object_names[OBJECT_NUM];
+
+	//各种参数
 
 	//Camera
 	Camera** cudaCam;
@@ -57,10 +61,15 @@ public:
 	//World
 	float placeHolder;
 
+	//当前帧数
 	int frameCount;
 
+	//控制信号：是否退出当前渲染
 	int break_flag;
+	//控制信号：是否退出程序
 	int end_flag;
+
+	int pause_flag;
 
 	void PrintMessege();
 	void showParameter();
@@ -85,30 +94,54 @@ class RTRendererCUDAQT : public QMainWindow
 
 public:
 	RTRendererCUDAQT(QWidget* parent = Q_NULLPTR);
+
+	
 	float clip_upperbound = 1;
+
+	//渲染引擎线程
 	LoopThread* looper;
+
+	//Camera,World,Render的参数个数
 	int paraNumCamere = 12;
 	int paraNumWorld = 1;
 	int paraNumRender = 2;
+
+	//修改参数时的统一接口
 	int changingNum;
 	int selected;
 	QLabel** changingLab;
 	QLineEdit** changingLine;
 
+	//集成的参数窗口创建函数
 	void setLabelRender(int index,int x, int y, std::string name);
 	void setLabelWorld(int index, int x, int y, std::string name);
 	void setLabelCamera(int index, int x, int y, std::string name);
-	void addObject(int index, int x, int y, std::string name);
+
 	void hideAll();
 	void initialization();
 	
 public slots:
+	//开始
 	void Startear();
+
+	//刷新显示
 	void refresh();
+
+	//退出
 	void Stop();
+
+	void Pause();
+
+	//显示参数
 	void ShowPara();
+
+	//设置参数
 	void setParameter();
+
+	//还原参数
 	void discardParameter();
+
+	//更改当前要修改的参数
 	void changeParaCamera();
 	void changeParaWorld();
 	void changeParaRender();
@@ -116,6 +149,8 @@ public slots:
 	void changePara();
 	void choosePara(int index);
 	void chooseObject(int index);
+
+	//物体的消失与加载
 	void disappear();
 	void appear();
 	void showObject();
@@ -137,7 +172,8 @@ private:
 	QPushButton* buttonObjectWorldAppear;
 	QPushButton* buttonObjectWorldDisappear;
 	QPushButton* StartButton;
-	QPushButton* StopButton;
+	QPushButton* ExitButton;
+	QPushButton* PauseButton;
 	QPushButton* Updater;
 	QPushButton* Discarder;
 	QTextEdit* logText;

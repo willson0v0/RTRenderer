@@ -276,32 +276,39 @@ void LoopThread::kernel()
 	this->frameCount = 0;
 	while (this->break_flag == 0)
 	{
-		renderTime = ms;
-
-		renderer << <blocks, threads >> > (this->frameCount++, frameBuffer, this->cudaCam, cudaWorld, renderRandomStates);
-
-
-		checkCudaErrors(cudaGetLastError());
-		checkCudaErrors(cudaDeviceSynchronize());
-		ms = float(clock() - StartTime);
-		renderTime = ms - renderTime;
-		clearLine();
-		printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / this->frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * this->frameCount / (ms - renderStart), 7, this->frameCount * SPP);
-
-
-		for (int i = 0; i < MAX_Y; i++)
+		if (pause_flag == 0)
 		{
-			for (int j = 0; j < MAX_X; j++)
+
+			renderTime = ms;
+
+			renderer << <blocks, threads >> > (this->frameCount++, frameBuffer, this->cudaCam, cudaWorld, renderRandomStates);
+
+
+			checkCudaErrors(cudaGetLastError());
+			checkCudaErrors(cudaDeviceSynchronize());
+			ms = float(clock() - StartTime);
+			renderTime = ms - renderTime;
+			clearLine();
+			printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / this->frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * this->frameCount / (ms - renderStart), 7, this->frameCount * SPP);
+
+
+			for (int i = 0; i < MAX_Y; i++)
 			{
-				int index = 3 * (i * MAX_X + j);
-				for (int k = 0; k < 3; k++)
+				for (int j = 0; j < MAX_X; j++)
 				{
-					ppm[index + k] = clip(this->targetClipUpperbound, 0.0, frameBuffer[index + 2 - k]) * (255.99 / this->targetClipUpperbound);
+					int index = 3 * (i * MAX_X + j);
+					for (int k = 0; k < 3; k++)
+					{
+						ppm[index + k] = clip(this->targetClipUpperbound, 0.0, frameBuffer[index + 2 - k]) * (255.99 / this->targetClipUpperbound);
+					}
 				}
 			}
+
+			emit refresh_flag();
+
+
 		}
 
-		emit refresh_flag();
 
 	}
 	this->break_flag = 0;
