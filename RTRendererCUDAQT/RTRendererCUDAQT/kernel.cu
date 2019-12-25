@@ -35,15 +35,11 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/opencv.hpp"
 
-
-
-
-
-
-
 #define ALLOWOUTOFBOUND
 
 clock_t StartTime;
+
+unsigned char* ppm = new unsigned char[MAX_X * MAX_Y * 3 + 10000];
 
 __device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* localRandState)
 {
@@ -108,6 +104,21 @@ __global__ void renderer(int frameCount, float* fBuffer, Camera** cam, Hittable*
 	pixel.writeFrameBuffer(i, j, fBuffer);
 }
 
+
+__global__ void converter(float* fBuffer, unsigned char* charBuffer, float upperBound)
+{
+
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
+	int j = threadIdx.y + blockIdx.y * blockDim.y;
+
+	int index = ((MAX_Y - j - 1) * MAX_X  + i) * 3;
+
+	charBuffer[index + 0] = clip(upperBound, 0.0, fBuffer[index + 2]) * (255.99 / upperBound);
+	charBuffer[index + 1] = clip(upperBound, 0.0, fBuffer[index + 1]) * (255.99 / upperBound);
+	charBuffer[index + 2] = clip(upperBound, 0.0, fBuffer[index + 0]) * (255.99 / upperBound);
+
+}
+
 __global__ void rander_init(curandState* randState)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -118,7 +129,6 @@ __global__ void rander_init(curandState* randState)
 }
 
 
-unsigned char* ppm = new unsigned char [MAX_X * MAX_Y * 3 + 10000];
 
 
 int main(int argc, char* argv[])
@@ -166,6 +176,7 @@ void LoopThread::kernel()
 	float tAperture;
 	float tFov;
 	int* allow = this->flag_show;
+	unsigned char* charBuffer;
 
 	while(this->end_flag == 0)
 	{
@@ -209,6 +220,8 @@ void LoopThread::kernel()
 
 	
 		checkCudaErrors(cudaMallocManaged((void**)&frameBuffer, frameBufferSize));
+		checkCudaErrors(cudaMalloc((void**)&charBuffer, sizeof(char)*(MAX_X * MAX_Y * 3 + 10000)))
+
 		checkCudaErrors(cudaMalloc((void**)&cudaList, num_Hittables * sizeof(Hittable*)));
 	
 		checkCudaErrors(cudaMalloc((void**)&cudaWorld, sizeof(Hittable*)));
@@ -264,32 +277,20 @@ void LoopThread::kernel()
 
 				renderTime = ms;
 
-				renderer << <blocks, threads >> > (this->frameCount++, frameBuffer, this->cudaCam, cudaWorld, renderRandomStates);
-
+				renderer <<<blocks, threads >>> (this->frameCount++, frameBuffer, this->cudaCam, cudaWorld, renderRandomStates);
+				converter <<<blocks, threads >>> (frameBuffer, charBuffer, this->targetClipUpperbound);
 
 				checkCudaErrors(cudaGetLastError());
 				checkCudaErrors(cudaDeviceSynchronize());
+				checkCudaErrors(cudaMemcpy(ppm, charBuffer, sizeof(char) * (MAX_X * MAX_Y * 3 + 10000), cudaMemcpyDeviceToHost));
+
 				ms = float(clock() - StartTime);
 				renderTime = ms - renderTime;
 				clearLine();
 				printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / this->frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * this->frameCount / (ms - renderStart), 7, this->frameCount * SPP);
 
 
-				for (int i = 0; i < MAX_Y; i++)
-				{
-					for (int j = 0; j < MAX_X; j++)
-					{
-						int index = 3 * (i * MAX_X + j);
-						for (int k = 0; k < 3; k++)
-						{
-							ppm[index + k] = clip(this->targetClipUpperbound, 0.0, frameBuffer[index + 2 - k]) * (255.99 / this->targetClipUpperbound);
-						}
-					}
-				}
-
 				emit refresh_flag();
-
-
 			}
 
 
@@ -312,7 +313,6 @@ void LoopThread::kernel()
 		checkCudaErrors(cudaFree(cudaWorld));
 		checkCudaErrors(cudaFree((this->cudaCam)));
 		checkCudaErrors(cudaFree(worldGenRandState));
-		checkCudaErrors(cudaFree(t));
 		checkCudaErrors(cudaFree(renderRandomStates));
 	
 	}
