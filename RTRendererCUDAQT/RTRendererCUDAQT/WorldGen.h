@@ -294,8 +294,24 @@ __global__ void camInit(Vec3 lookat, Vec3 lookfrom, Vec3 vup, float focusDist, f
 	*camera = new Camera(MAX_X, MAX_Y, fov, lookfrom, lookat, vup, aperture, focusDist);
 }
 
-__host__ void meshTestHost(unsigned char* texture, int tx, int ty, Hittable** list, Hittable** world, int* allow)
+__host__ void meshTestHost(Hittable** list, Hittable** world, int* allow)
 {
+	printMsg(LogLevel::info, "Loading texture...");
+	cv::Mat em;
+	unsigned char* texture;
+	em = cv::imread("earthmap.jpg");
+	if (em.rows < 1 || em.cols < 1)
+	{
+		printMsg(LogLevel::error, "Failed to find Earth texture(earthmap.jpg).");
+	}
+	else
+	{
+		printMsg(LogLevel::debug, "Texture loaded.");
+	}
+
+	checkCudaErrors(cudaMalloc((void**)&texture, sizeof(unsigned char) * em.rows * em.cols * 3));
+	checkCudaErrors(cudaMemcpy(texture, em.data, sizeof(unsigned char) * em.rows * em.cols * 3, cudaMemcpyHostToDevice));
+
 	printMsg(LogLevel::info, "Loading mesh...");
 	std::ifstream lowPolyDeer("lowpolydeer.obj", std::ifstream::in);
 	std::vector<int> f;
@@ -337,5 +353,5 @@ __host__ void meshTestHost(unsigned char* texture, int tx, int ty, Hittable** li
 	checkCudaErrors(cudaMemcpy(faces, fh, sizeof(int) * f.size(), cudaMemcpyHostToDevice));
 	checkCudaErrors(cudaMemcpy(vertexs, vh, sizeof(Vec3) * v.size(), cudaMemcpyHostToDevice));
 
-	meshTest <<<1, 1>>> (texture, tx, ty, faces, vertexs, f.size()/3, v.size(), list, world);
+	meshTest <<<1, 1>>> (texture, em.cols, em.rows, faces, vertexs, f.size()/3, v.size(), list, world);
 }

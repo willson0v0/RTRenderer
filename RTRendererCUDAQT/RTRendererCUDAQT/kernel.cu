@@ -153,8 +153,6 @@ void LoopThread::kernel()
 	int num_Hittables = 500;
 	float ms;
 	curandState* worldGenRandState;
-	cv::Mat em;
-	unsigned char* t;
 	dim3 blocks(MAX_X / BLK_X + 1, MAX_Y / BLK_Y + 1);
 	dim3 threads(BLK_X, BLK_Y);
 	curandState* renderRandomStates;
@@ -171,166 +169,151 @@ void LoopThread::kernel()
 
 	while(this->end_flag == 0)
 	{
-	
-
-	printMsg(LogLevel::info, "Rendering a %d x %d image in %d x %d blocks", MAX_X, MAX_Y, BLK_X, BLK_Y);
-	printMsg(LogLevel::info, "SPP(per frame) = %d, depth = %d", SPP, ITER);
-	printMsg(LogLevel::info, "Current log level: %d", logLevel);
+		printMsg(LogLevel::info, "Rendering a %d x %d image in %d x %d blocks", MAX_X, MAX_Y, BLK_X, BLK_Y);
+		printMsg(LogLevel::info, "SPP(per frame) = %d, depth = %d", SPP, ITER);
+		printMsg(LogLevel::info, "Current log level: %d", logLevel);
 
 	
-	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
-	printMsg(LogLevel::debug, "Stack size limit: \t\t%zu Byte.", *pValue);
-
-	if (*pValue < 65536)
-	{
-		printMsg(LogLevel::warning, "Stack size too small(%zu Byte), Resizing to 65536...", *pValue);
-		checkCudaErrors(cudaDeviceSetLimit(cudaLimitStackSize, 65536));
 		checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
 		printMsg(LogLevel::debug, "Stack size limit: \t\t%zu Byte.", *pValue);
-		if (*pValue < 65535)
+
+		if (*pValue < 65536)
 		{
-			printMsg(LogLevel::fatal, "Stack resized failed. Quit now.");
-			cudaDeviceReset();
-			system("pause");
-			exit(-1);
-		}
-	}
-
-	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitPrintfFifoSize));
-	printMsg(LogLevel::debug, "Printf FIFO size: \t\t%zu Byte.", *pValue);
-	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitMallocHeapSize));
-	printMsg(LogLevel::debug, "Heap size limit: \t\t%zu Byte.", *pValue);
-	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitDevRuntimeSyncDepth));
-	printMsg(LogLevel::debug, "DevRuntimeSyncDepth: \t\t%zu .", *pValue);
-	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitDevRuntimePendingLaunchCount));
-	printMsg(LogLevel::debug, "DevRuntimePendingLaunchCount: %zu Byte.", *pValue);
-	checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitMaxL2FetchGranularity));
-	printMsg(LogLevel::debug, "MaxL2FetchGranularity: \t%zu Byte.", *pValue);
-
-#ifdef _DEBUG
-	printMsg(LogLevel::warning, "Compiled under debug mode. Performance is compromised.");
-#endif
-
-	
-	checkCudaErrors(cudaMallocManaged((void**)&frameBuffer, frameBufferSize));
-	checkCudaErrors(cudaMalloc((void**)&cudaList, num_Hittables * sizeof(Hittable*)));
-	
-	checkCudaErrors(cudaMalloc((void**)&cudaWorld, sizeof(Hittable*)));
-	checkCudaErrors(cudaMalloc((void**) & (this->cudaCam), sizeof(Camera*)));
-
-	ms = float(clock() - StartTime);
-	printMsg(LogLevel::info, "Alloc finished @ %lf ms", ms);
-
-	checkCudaErrors(cudaMalloc((void**)&worldGenRandState, sizeof(curandState)));
-
-	em = cv::imread("earthmap.jpg");
-	if (em.rows < 1 || em.cols < 1)
-	{
-		printMsg(LogLevel::error, "Failed to find Earth texture(earthmap.jpg).");
-	}
-	else
-	{
-		printMsg(LogLevel::debug, "Texture loaded.");
-	}
-	
-	checkCudaErrors(cudaMalloc((void**)&t, sizeof(unsigned char) * em.rows * em.cols * 3));
-	checkCudaErrors(cudaMemcpy(t, em.data, sizeof(unsigned char) * em.rows * em.cols * 3, cudaMemcpyHostToDevice));
-
-	tLookat = *this->Lookat;
-	tLookfrom = *this->Lookfrom;
-	tVup = *this->Vup;
-	tFocusDist = this->FocusDist;
-	tAperture = this->Aperture;
-	tFov = this->Fov;
-	
-
-	// createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState, tLookat, tLookfrom,tVup,tFocusDist,tAperture,tFov);
-	meshTestHost(t, em.cols, em.rows, cudaList, cudaWorld,allow);
-	camInit <<<1, 1 >>> (tLookat, tLookfrom, tVup, tFocusDist, tAperture, tFov, this->cudaCam);
-
-
-	checkCudaErrors(cudaGetLastError());
-	checkCudaErrors(cudaDeviceSynchronize());
-
-	ms = float(clock() - StartTime);
-	printMsg(LogLevel::info, "World gen finished @ %lf ms", ms);
-
-
-	checkCudaErrors(cudaMalloc((void**)&renderRandomStates, MAX_X * MAX_Y * sizeof(curandState)));
-	rander_init << <blocks, threads >> > (renderRandomStates);
-	checkCudaErrors(cudaGetLastError());
-	checkCudaErrors(cudaDeviceSynchronize());
-
-	ms = float(clock() - StartTime);
-	renderStart = ms;
-	printMsg(LogLevel::info, "Init renderer finished @ %lf ms", ms);
-
-	printMsg(LogLevel::info, "\t+-------------------------------------------------------------------------------+");
-	printMsg(LogLevel::info, "\t|                 Starting renderer, press q in prompt to quit.                 |");
-	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+");
-	printMsg(LogLevel::info, "\t|      cur.     |      avg.     |     total     |      FPS      |      SPP      |");
-	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+");
-	printMsg(LogLevel::info, "\t|               |               |               |               |               |");
-	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+\033[A\r");
-
-	this->frameCount = 0;
-	while (this->break_flag == 0)
-	{
-		if (pause_flag == 0)
-		{
-
-			renderTime = ms;
-
-			renderer << <blocks, threads >> > (this->frameCount++, frameBuffer, this->cudaCam, cudaWorld, renderRandomStates);
-
-
-			checkCudaErrors(cudaGetLastError());
-			checkCudaErrors(cudaDeviceSynchronize());
-			ms = float(clock() - StartTime);
-			renderTime = ms - renderTime;
-			clearLine();
-			printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / this->frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * this->frameCount / (ms - renderStart), 7, this->frameCount * SPP);
-
-
-			for (int i = 0; i < MAX_Y; i++)
+			printMsg(LogLevel::warning, "Stack size too small(%zu Byte), Resizing to 65536...", *pValue);
+			checkCudaErrors(cudaDeviceSetLimit(cudaLimitStackSize, 65536));
+			checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitStackSize));
+			printMsg(LogLevel::debug, "Stack size limit: \t\t%zu Byte.", *pValue);
+			if (*pValue < 65535)
 			{
-				for (int j = 0; j < MAX_X; j++)
+				printMsg(LogLevel::fatal, "Stack resized failed. Quit now.");
+				cudaDeviceReset();
+				system("pause");
+				exit(-1);
+			}
+		}
+
+		checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitPrintfFifoSize));
+		printMsg(LogLevel::debug, "Printf FIFO size: \t\t%zu Byte.", *pValue);
+		checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitMallocHeapSize));
+		printMsg(LogLevel::debug, "Heap size limit: \t\t%zu Byte.", *pValue);
+		checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitDevRuntimeSyncDepth));
+		printMsg(LogLevel::debug, "DevRuntimeSyncDepth: \t\t%zu .", *pValue);
+		checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitDevRuntimePendingLaunchCount));
+		printMsg(LogLevel::debug, "DevRuntimePendingLaunchCount: %zu Byte.", *pValue);
+		checkCudaErrors(cudaDeviceGetLimit(pValue, cudaLimitMaxL2FetchGranularity));
+		printMsg(LogLevel::debug, "MaxL2FetchGranularity: \t%zu Byte.", *pValue);
+
+	#ifdef _DEBUG
+		printMsg(LogLevel::warning, "Compiled under debug mode. Performance is compromised.");
+	#endif
+
+	
+		checkCudaErrors(cudaMallocManaged((void**)&frameBuffer, frameBufferSize));
+		checkCudaErrors(cudaMalloc((void**)&cudaList, num_Hittables * sizeof(Hittable*)));
+	
+		checkCudaErrors(cudaMalloc((void**)&cudaWorld, sizeof(Hittable*)));
+		checkCudaErrors(cudaMalloc((void**) & (this->cudaCam), sizeof(Camera*)));
+
+		ms = float(clock() - StartTime);
+		printMsg(LogLevel::info, "Alloc finished @ %lf ms", ms);
+
+		checkCudaErrors(cudaMalloc((void**)&worldGenRandState, sizeof(curandState)));
+
+		tLookat = *this->Lookat;
+		tLookfrom = *this->Lookfrom;
+		tVup = *this->Vup;
+		tFocusDist = this->FocusDist;
+		tAperture = this->Aperture;
+		tFov = this->Fov;
+	
+
+		// createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState, tLookat, tLookfrom,tVup,tFocusDist,tAperture,tFov);
+		meshTestHost(cudaList, cudaWorld,allow);
+		camInit <<<1, 1 >>> (tLookat, tLookfrom, tVup, tFocusDist, tAperture, tFov, this->cudaCam);
+
+
+		checkCudaErrors(cudaGetLastError());
+		checkCudaErrors(cudaDeviceSynchronize());
+
+		ms = float(clock() - StartTime);
+		printMsg(LogLevel::info, "World gen finished @ %lf ms", ms);
+
+
+		checkCudaErrors(cudaMalloc((void**)&renderRandomStates, MAX_X * MAX_Y * sizeof(curandState)));
+		rander_init << <blocks, threads >> > (renderRandomStates);
+		checkCudaErrors(cudaGetLastError());
+		checkCudaErrors(cudaDeviceSynchronize());
+
+		ms = float(clock() - StartTime);
+		renderStart = ms;
+		printMsg(LogLevel::info, "Init renderer finished @ %lf ms", ms);
+
+		printMsg(LogLevel::info, "\t+-------------------------------------------------------------------------------+");
+		printMsg(LogLevel::info, "\t|                 Starting renderer, press q in prompt to quit.                 |");
+		printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+");
+		printMsg(LogLevel::info, "\t|      cur.     |      avg.     |     total     |      FPS      |      SPP      |");
+		printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+");
+		printMsg(LogLevel::info, "\t|               |               |               |               |               |");
+		printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+---------------+\033[A\r");
+
+		this->frameCount = 0;
+		while (this->break_flag == 0)
+		{
+			if (pause_flag == 0)
+			{
+
+				renderTime = ms;
+
+				renderer << <blocks, threads >> > (this->frameCount++, frameBuffer, this->cudaCam, cudaWorld, renderRandomStates);
+
+
+				checkCudaErrors(cudaGetLastError());
+				checkCudaErrors(cudaDeviceSynchronize());
+				ms = float(clock() - StartTime);
+				renderTime = ms - renderTime;
+				clearLine();
+				printMsg(LogLevel::info, "\t|%*.2lf \t|%*.2lf \t|%*.2lf\t| %*.6lf\t| %*d\t|", 7, renderTime / 1000.0, 7, (ms - renderStart) / 1000.0 / this->frameCount, 7, (ms - renderStart) / 1000.0, 10, 1000.0 * this->frameCount / (ms - renderStart), 7, this->frameCount * SPP);
+
+
+				for (int i = 0; i < MAX_Y; i++)
 				{
-					int index = 3 * (i * MAX_X + j);
-					for (int k = 0; k < 3; k++)
+					for (int j = 0; j < MAX_X; j++)
 					{
-						ppm[index + k] = clip(this->targetClipUpperbound, 0.0, frameBuffer[index + 2 - k]) * (255.99 / this->targetClipUpperbound);
+						int index = 3 * (i * MAX_X + j);
+						for (int k = 0; k < 3; k++)
+						{
+							ppm[index + k] = clip(this->targetClipUpperbound, 0.0, frameBuffer[index + 2 - k]) * (255.99 / this->targetClipUpperbound);
+						}
 					}
 				}
-			}
 
-			emit refresh_flag();
+				emit refresh_flag();
+
+
+			}
 
 
 		}
-
-
-	}
-	this->break_flag = 0;
+		this->break_flag = 0;
 	
-	printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+");
+		printMsg(LogLevel::info, "\t+---------------+---------------+---------------+---------------+");
 
-	printMsg(LogLevel::debug, "Exec time: %lf ms. Saving result...", ms);
+		printMsg(LogLevel::debug, "Exec time: %lf ms. Saving result...", ms);
 
 
 	
-	M.data = (unsigned char *)frameBuffer;
-	M *= 255.99;
-	M.convertTo(output, CV_8UC3);
-	cv::imwrite(fileName, output);
-	printMsg(LogLevel::info, "File saved at: \"%s\"", fileName);
-	checkCudaErrors(cudaFree(frameBuffer));
-	checkCudaErrors(cudaFree(cudaList));
-	checkCudaErrors(cudaFree(cudaWorld));
-	checkCudaErrors(cudaFree((this->cudaCam)));
-	checkCudaErrors(cudaFree(worldGenRandState));
-	checkCudaErrors(cudaFree(t));
-	checkCudaErrors(cudaFree(renderRandomStates));
+		M.data = (unsigned char *)frameBuffer;
+		M *= 255.99;
+		M.convertTo(output, CV_8UC3);
+		cv::imwrite(fileName, output);
+		printMsg(LogLevel::info, "File saved at: \"%s\"", fileName);
+		checkCudaErrors(cudaFree(frameBuffer));
+		checkCudaErrors(cudaFree(cudaList));
+		checkCudaErrors(cudaFree(cudaWorld));
+		checkCudaErrors(cudaFree((this->cudaCam)));
+		checkCudaErrors(cudaFree(worldGenRandState));
+		checkCudaErrors(cudaFree(t));
+		checkCudaErrors(cudaFree(renderRandomStates));
 	
 	}
 	
