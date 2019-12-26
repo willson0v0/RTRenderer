@@ -294,7 +294,7 @@ __global__ void camInit(Vec3 lookat, Vec3 lookfrom, Vec3 vup, float focusDist, f
 	*camera = new Camera(MAX_X, MAX_Y, fov, lookfrom, lookat, vup, aperture, focusDist);
 }
 
-__host__ void meshTestHost(Hittable** list, Hittable** world, int* allow)
+__host__ void meshTestHost(Hittable** list, Hittable** world, int* allow, std::string fileName)
 {
 	printMsg(LogLevel::info, "Loading texture...");
 	cv::Mat em;
@@ -313,7 +313,7 @@ __host__ void meshTestHost(Hittable** list, Hittable** world, int* allow)
 	checkCudaErrors(cudaMemcpy(texture, em.data, sizeof(unsigned char) * em.rows * em.cols * 3, cudaMemcpyHostToDevice));
 
 	printMsg(LogLevel::info, "Loading mesh...");
-	std::ifstream lowPolyDeer("lowpolydeer.obj", std::ifstream::in);
+	std::ifstream lowPolyDeer(fileName, std::ifstream::in);
 	std::vector<int> f;
 	std::vector<Vec3> v;
 	while (lowPolyDeer.good() && allow[0] == 1)

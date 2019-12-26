@@ -52,11 +52,14 @@ RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 	PauseButton = new QPushButton("Pause", this);
 	PauseButton->setGeometry(MAX_X + 220, MAX_Y + 120, 150, 20);
 
+	ResetButton = new QPushButton("Default", this);
+	ResetButton->setGeometry(MAX_X + 220, MAX_Y + 160, 150, 20);
+
 	Updater = new QPushButton("Update", this);
-	Updater->setGeometry(MAX_X + 220, MAX_Y + 160, 150, 20);
+	Updater->setGeometry(MAX_X + 220, MAX_Y + 200, 150, 20);
 
 	Discarder = new QPushButton("Discard", this);
-	Discarder->setGeometry(MAX_X + 220, MAX_Y + 200, 150, 20);
+	Discarder->setGeometry(MAX_X + 220, MAX_Y + 240, 150, 20);
 
 	Parameter = new QComboBox(this);
 	Parameter->setGeometry(MAX_X + 50, MAX_Y + 40, 150, 20);
@@ -90,13 +93,13 @@ RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 	labObjectStatus->setGeometry(20, MAX_Y + 100, 100, 20);
 	labObjectStatus->setText(QString::fromStdString("ObjectStatus"));
 
-	buttonObjectWorldAppear = new QPushButton(this);
-	buttonObjectWorldAppear->setGeometry(20, MAX_Y + 140, 100, 20);
-	buttonObjectWorldAppear->setText(QString::fromStdString("Appear"));
+	AppearButton = new QPushButton(this);
+	AppearButton->setGeometry(20, MAX_Y + 140, 100, 20);
+	AppearButton->setText(QString::fromStdString("Appear"));
 
-	buttonObjectWorldDisappear = new QPushButton(this);
-	buttonObjectWorldDisappear->setGeometry(20, MAX_Y + 180, 100, 20);
-	buttonObjectWorldDisappear->setText(QString::fromStdString("Disappear"));
+	DisappearButton = new QPushButton(this);
+	DisappearButton->setGeometry(20, MAX_Y + 180, 100, 20);
+	DisappearButton->setText(QString::fromStdString("Disappear"));
 
 
 
@@ -126,11 +129,12 @@ RTRendererCUDAQT::RTRendererCUDAQT(QWidget* parent)
 	connect(ExitButton, SIGNAL(clicked()), this, SLOT(Stop()));
 	connect(PauseButton, SIGNAL(clicked()), this, SLOT(Pause()));
 	connect(Updater, SIGNAL(clicked()), this, SLOT(setParameter()));
+	connect(ResetButton, SIGNAL(clicked()), this, SLOT(Reset()));
 	connect(Discarder, SIGNAL(clicked()), this, SLOT(discardParameter()));
 	connect(Parameter, SIGNAL(activated(int)), this, SLOT(choosePara(int)));
 	connect(World, SIGNAL(activated(int)), this, SLOT(chooseObject(int)));
-	connect(buttonObjectWorldDisappear, SIGNAL(clicked()), this, SLOT(disappear()));
-	connect(buttonObjectWorldAppear, SIGNAL(clicked()), this, SLOT(appear()));
+	connect(DisappearButton, SIGNAL(clicked()), this, SLOT(disappear()));
+	connect(AppearButton, SIGNAL(clicked()), this, SLOT(appear()));
 
 	initialization();
 
@@ -212,8 +216,8 @@ void RTRendererCUDAQT::changeObjectWorld()
 	lineObjectName->show();
 	labObjectStatus->show();
 	lineObjectStatus->show();
-	buttonObjectWorldAppear->show();
-	buttonObjectWorldDisappear->show();
+	AppearButton->show();
+	DisappearButton->show();
 	World->show();
 
 }
@@ -291,8 +295,8 @@ void RTRendererCUDAQT::hideAll()
 	lineObjectName->hide();
 	labObjectStatus->hide();
 	lineObjectStatus->hide();
-	buttonObjectWorldAppear->hide();
-	buttonObjectWorldDisappear->hide();
+	AppearButton->hide();
+	DisappearButton->hide();
 	World->hide();
 }
 
@@ -344,9 +348,42 @@ void RTRendererCUDAQT::Stop()
 	this->looper->end_flag = 1;
 }
 
+void RTRendererCUDAQT::Reset()
+{
+	initialization();
+	discardParameter();
+	setParameter();
+}
+
+void RTRendererCUDAQT::checkParameterLegal()
+{
+	std::string str;
+
+	if (this->lineParaRender[0]->text().toInt() <= 0)
+	{
+		this->lineParaRender[0]->setText(QString::fromStdString(std::to_string(this->looper->targetSPP)));
+		str = "targetSPP";
+		str += " illegal !";
+		this->logText->append(QString::fromStdString(str));
+	}
+
+	if (this->lineParaRender[1]->text().toFloat() <= 0)
+	{
+		this->lineParaRender[1]->setText(QString::fromStdString(std::to_string(this->looper->targetClipUpperbound)));
+		str = "targetClipUpperbound";
+		str += " illegal !";
+		this->logText->append(QString::fromStdString(str));
+	}
+
+	//lookfrom, lookat 无法限制。只能希望用户别作死了
+
+	
+}
+
 //设置参数。将窗口输入的数值对应赋值给各参数
 void RTRendererCUDAQT::setParameter()
 {
+	checkParameterLegal();
 	this->looper->targetSPP = this->lineParaRender[0]->text().toInt();
 	this->looper->targetClipUpperbound = this->lineParaRender[1]->text().toFloat();
 

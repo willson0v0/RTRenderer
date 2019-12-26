@@ -241,9 +241,9 @@ void LoopThread::kernel()
 	
 
 		// createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState, tLookat, tLookfrom,tVup,tFocusDist,tAperture,tFov);
-		meshTestHost(cudaList, cudaWorld,allow);
+		meshTestHost(cudaList, cudaWorld,allow, "lowpolydeer.obj");
 		camInit <<<1, 1 >>> (tLookat, tLookfrom, tVup, tFocusDist, tAperture, tFov, this->cudaCam);
-
+		
 
 		checkCudaErrors(cudaGetLastError());
 		checkCudaErrors(cudaDeviceSynchronize());

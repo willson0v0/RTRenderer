@@ -117,6 +117,8 @@ public:
 	void setLabelWorld(int index, int x, int y, std::string name);
 	void setLabelCamera(int index, int x, int y, std::string name);
 
+	void checkParameterLegal();
+
 	void hideAll();
 	void initialization();
 	
@@ -131,6 +133,8 @@ public slots:
 	void Stop();
 
 	void Pause();
+
+	void Reset();
 
 	//œ‘ æ≤Œ ˝
 	void ShowPara();
@@ -169,8 +173,9 @@ private:
 	QLabel* labObjectName;
 	QLineEdit* lineObjectStatus;
 	QLabel* labObjectStatus;
-	QPushButton* buttonObjectWorldAppear;
-	QPushButton* buttonObjectWorldDisappear;
+	QPushButton* AppearButton;
+	QPushButton* DisappearButton;
+	QPushButton* ResetButton;
 	QPushButton* StartButton;
 	QPushButton* ExitButton;
 	QPushButton* PauseButton;
