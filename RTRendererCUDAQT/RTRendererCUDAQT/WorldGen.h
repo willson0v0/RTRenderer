@@ -284,9 +284,9 @@ __global__ void meshTest(unsigned char* texture, int tx, int ty, int* faces, Vec
 {
 	list[0] = new TriangleMesh(faces, vertexs, nface, nvertex, new Lambertian(new ConstantTexture(0.8, 0.8, 0.8)));
 	list[1] = new Sphere(Vec3(1200, 1200, -1200), 300, new DiffuseLight(new ConstantTexture(10, 10, 10)));
-	list[2] = new Sphere(Vec3(0, -5000.0, -1), 5000, new Lambertian(new ImageTexture(texture, tx, ty)));
+	list[2] = new Sphere(Vec3(0, -300, -1), 200, new Lambertian(new ImageTexture(texture, tx, ty)));
 
-	*world = new HittableList(list, 2);
+	*world = new HittableList(list, 3);
 }
 
 __global__ void camInit(Vec3 lookat, Vec3 lookfrom, Vec3 vup, float focusDist, float aperture, float fov, Camera** camera)

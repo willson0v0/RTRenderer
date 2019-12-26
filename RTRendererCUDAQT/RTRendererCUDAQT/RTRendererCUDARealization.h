@@ -149,8 +149,8 @@ void RTRendererCUDAQT::initialization()
 	this->looper->targetClipUpperbound = 1.0;
 	this->looper->targetSPP = INT_MAX;//默认是最大值，不依靠它提供break
 
-	this->looper->Lookat = new Vec3(500, 500, 500);
-	this->looper->Lookfrom = new Vec3(5000, 2000, 4000);
+	this->looper->Lookat = new Vec3(0, 0, 0);
+	this->looper->Lookfrom = new Vec3(100, 100, 200);
 	this->looper->Vup = new Vec3(0, 1, 0);
 
 	this->looper->FocusDist = (*this->looper->Lookat - *this->looper->Lookfrom).length();
