@@ -282,11 +282,11 @@ __global__ void triMeshTest(Hittable** list, Hittable** world, Camera** camera)
 
 __global__ void meshTest(unsigned char* texture, int tx, int ty, int* faces, Vec3* vertexs, int nface, int nvertex, Hittable** list, Hittable** world)
 {
-	list[0] = new Sphere(Vec3(0, -5000.0, -1), 5000, new Lambertian(new ImageTexture(texture, tx, ty)));
-	list[1] = new TriangleMesh(faces, vertexs, nface, nvertex, new Lambertian(new ConstantTexture(0.8, 0.8, 0.8)));
-	list[2] = new Sphere(Vec3(1200, 1200, -1200), 300, new DiffuseLight(new ConstantTexture(10, 10, 10)));
+	list[0] = new TriangleMesh(faces, vertexs, nface, nvertex, new Lambertian(new ConstantTexture(0.8, 0.8, 0.8)));
+	list[1] = new Sphere(Vec3(1200, 1200, -1200), 300, new DiffuseLight(new ConstantTexture(10, 10, 10)));
+	list[2] = new Sphere(Vec3(0, -5000.0, -1), 5000, new Lambertian(new ImageTexture(texture, tx, ty)));
 
-	*world = new HittableList(list, 3);
+	*world = new HittableList(list, 2);
 }
 
 __global__ void camInit(Vec3 lookat, Vec3 lookfrom, Vec3 vup, float focusDist, float aperture, float fov, Camera** camera)
@@ -319,18 +319,24 @@ __host__ void meshTestHost(Hittable** list, Hittable** world, int* allow, std::s
 	while (lowPolyDeer.good() && allow[0] == 1)
 	{
 		std::string a, b, c, d;
-		lowPolyDeer >> a >> b >> c >> d;
+		lowPolyDeer >> a;
 		if (a == "v")
 		{
+			lowPolyDeer >> b >> c >> d;
 			v.push_back(Vec3(std::stof(b), std::stof(c), std::stof(d)));
 			printMsg(LogLevel::extra, "vertex: %f, %f, %f", std::stof(b), std::stof(c), std::stof(d));
 		}
 		else if(a == "f")
 		{
+			lowPolyDeer >> b >> c >> d;
 			f.push_back(std::stoi(b));
 			f.push_back(std::stoi(c));
 			f.push_back(std::stoi(d));
 			printMsg(LogLevel::extra, "face: %d, %d, %d", std::stoi(b), std::stoi(c), std::stoi(d));
+		}
+		else
+		{
+			lowPolyDeer.ignore(100, '\n');
 		}
 	}
 	printMsg(LogLevel::info, "3D file parsed with %d faces and %d vertexs.", f.size()/3, v.size());
