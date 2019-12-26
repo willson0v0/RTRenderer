@@ -309,12 +309,12 @@ void LoopThread::kernel()
 		cv::imwrite(fileName, output);
 		printMsg(LogLevel::info, "File saved at: \"%s\"", fileName);
 		checkCudaErrors(cudaFree(frameBuffer));
+		checkCudaErrors(cudaFree(charBuffer));
 		checkCudaErrors(cudaFree(cudaList));
 		checkCudaErrors(cudaFree(cudaWorld));
 		checkCudaErrors(cudaFree((this->cudaCam)));
 		checkCudaErrors(cudaFree(worldGenRandState));
 		checkCudaErrors(cudaFree(renderRandomStates));
-	
 	}
 	
 }
