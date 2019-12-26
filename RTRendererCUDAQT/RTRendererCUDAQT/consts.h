@@ -6,8 +6,8 @@
 
 #define ALLOWOUTOFBOUND
 #define ALLOWOVERFLOW
-//#define DARKSCENE
 //#define USE_BVH
+//#define DARKSCENE
 
 enum class LogLevel
 {
@@ -26,8 +26,8 @@ constexpr auto MAX_Y = 768;
 constexpr auto BLK_X = 25;
 constexpr auto BLK_Y = 20;
 constexpr auto PI = 3.1415926535897932384626433832795;
-constexpr auto logLevel = LogLevel::debug;
-constexpr auto ITER = 50;
+constexpr auto logLevel = LogLevel::extra;
+constexpr auto ITER = 7;
 constexpr auto SPP = 4;
 
 

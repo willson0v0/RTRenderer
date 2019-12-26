@@ -12,11 +12,11 @@
 #include <stdarg.h>
 #include <Windows.h>
 #include <string>
+#include "Vec3.h"
 
 std::string str;
 
 
-#include "Vec3.h"
 
 __device__ __host__ float ffmin(float a, float b)
 {

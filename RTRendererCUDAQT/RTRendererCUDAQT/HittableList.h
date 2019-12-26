@@ -63,7 +63,7 @@ __device__ void HittableList::remove(int n)
 		return;
 	}
 
-	printMsg(LogLevel::debug, "Removing Index£º %d", n);
+	printMsg(LogLevel::debug, "Removing Index: %d", n);
 
 	Hittable** newList = new Hittable * [listSize - 1];
 
@@ -80,6 +80,8 @@ __device__ void HittableList::remove(int n)
 			newList[i-1] = list[i];
 		}
 	}
+	list = newList;
+	listSize--;
 }
 
 __device__ bool HittableList::boundingBox(AABB& box) const

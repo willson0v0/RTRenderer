@@ -1,5 +1,7 @@
 #pragma once
+#include "consts.h"
 #include "Hittable.h"
+#include "BVH.h"
 
 class TriangleMesh : public Hittable
 {
@@ -74,12 +76,17 @@ public:
 				}
 			}
 			box = AABB(s, b);
+			return true;
 		}
 	};
 
-	Triangle** triangles;
 	Vec3* vertex;
 	Material* matPtr;
+	Hittable** triangles;
+
+#ifdef USE_BVH
+	BVH* bvh;
+#endif
 
 	int nTriangles;
 	int nVertex;
@@ -87,10 +94,10 @@ public:
 	double* u;
 	double* v;
 
-	__device__ TriangleMesh(int* triVerList, Vec3* vr, int nt, int nv, Material* m)
+	__device__ TriangleMesh(int* triVerList, Vec3* vr, int nt, int nv, Material* m, curandState* localRandState)
 		:nTriangles(nt), nVertex(nv), matPtr(m)
 	{
-		triangles = new Triangle * [nTriangles];
+		triangles = new Hittable * [nTriangles];
 		for (int i = 0; i < nTriangles; i++)
 		{
 			triangles[i] = new Triangle(&triVerList[i * 3], i, this);
@@ -101,10 +108,16 @@ public:
 		{
 			vertex[i] = vr[i];
 		}
+#ifdef USE_BVH
+		bvh = new BVH(triangles, nTriangles, localRandState);
+#endif
 	}
 
 	__device__ virtual bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec, curandState* localRandState) const
 	{
+#ifdef USE_BVH
+		return bvh->hit(r, tMin, tMax, rec, localRandState);
+#else
 		HitRecord tRec;
 		bool hitAny = false;
 		float closest = tMax;
@@ -118,10 +131,14 @@ public:
 			}
 		}
 		return hitAny;
+#endif
 	}
 
 	__device__ virtual bool boundingBox(AABB& box) const
 	{
+#ifdef USE_BVH
+		return bvh->boundingBox(box);
+#else
 		if (nTriangles < 1) return false;
 		AABB temp;
 		if (!triangles[0]->boundingBox(temp))
@@ -141,5 +158,6 @@ public:
 			else return false;
 		}
 		return true;
+#endif
 	}
 };

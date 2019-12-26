@@ -189,7 +189,7 @@ __global__ void createCornellBox(Hittable** list, Hittable** world, Camera** cam
 		Vec3(280,294,0),
 		Vec3(280,280,60)
 	};
-	list[i++] = new TriangleMesh(faces, vertexs, 4, 4, new Dielectric(Vec3(0.1, 0.8, 1), 1.5, 0));
+	list[i++] = new TriangleMesh(faces, vertexs, 4, 4, new Dielectric(Vec3(0.1, 0.8, 1), 1.5, 0), randState);
 
 #ifdef USE_BVH
 	* world = new BVH(list, i, randState);
@@ -252,7 +252,7 @@ __global__ void createCornellSmoke(Hittable** list, Hittable** world, Camera** c
 	*camera = new Camera(MAX_X, MAX_Y, 40, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }
 
-__global__ void triMeshTest(Hittable** list, Hittable** world, Camera** camera)
+__global__ void triMeshTest(Hittable** list, Hittable** world, Camera** camera, curandState* randState)
 {
 	printMsg(LogLevel::info, "Using scene: Triangle test.");
 
@@ -269,7 +269,7 @@ __global__ void triMeshTest(Hittable** list, Hittable** world, Camera** camera)
 		Vec3(1,1,1)
 	};
 
-	list[0] = new TriangleMesh(faces, vertexs, 4, 4, new Lambertian(new ConstantTexture(0.2, 0.2, 0.8)));
+	list[0] = new TriangleMesh(faces, vertexs, 4, 4, new Lambertian(new ConstantTexture(0.2, 0.2, 0.8)), randState);
 
 	*world = new HittableList(list, 1);
 
@@ -280,13 +280,18 @@ __global__ void triMeshTest(Hittable** list, Hittable** world, Camera** camera)
 	*camera = new Camera(MAX_X, MAX_Y, 60.0f, lookfrom, lookat, Vec3(0, 1, 0), aperture, focusDist);
 }
 
-__global__ void meshTest(unsigned char* texture, int tx, int ty, int* faces, Vec3* vertexs, int nface, int nvertex, Hittable** list, Hittable** world)
+__global__ void meshTest(unsigned char* texture, int tx, int ty, int* faces, Vec3* vertexs, int nface, int nvertex, Hittable** list, Hittable** world, curandState* randState)
 {
-	list[0] = new TriangleMesh(faces, vertexs, nface, nvertex, new Lambertian(new ConstantTexture(0.8, 0.8, 0.8)));
+	//list[0] = new TriangleMesh(faces, vertexs, nface, nvertex, new Metal(Vec3(0.8, 0.8, 0.8), 0.8), randState);
+	//list[0] = new TriangleMesh(faces, vertexs, nface, nvertex, new Lambertian(new ConstantTexture(0.8, 0.8, 0.8)), randState);
+	list[0] = new TriangleMesh(faces, vertexs, nface, nvertex, new Dielectric(Vec3(0.8, 0.8, 0.8), 1.5, 0), randState);
 	list[1] = new Sphere(Vec3(1200, 1200, -1200), 300, new DiffuseLight(new ConstantTexture(10, 10, 10)));
-	list[2] = new Sphere(Vec3(0, -300, -1), 200, new Lambertian(new ImageTexture(texture, tx, ty)));
+	list[2] = new Sphere(Vec3(0, -300, -1), 290, new Lambertian(new ImageTexture(texture, tx, ty)));
+	//list[2] = new Sphere(Vec3(0, -300, -1), 200, new Lambertian(new ImageTexture(texture, tx, ty)));
 
 	*world = new HittableList(list, 3);
+
+	//((HittableList*)(*world))->remove(2);
 }
 
 __global__ void camInit(Vec3 lookat, Vec3 lookfrom, Vec3 vup, float focusDist, float aperture, float fov, Camera** camera)
@@ -294,7 +299,7 @@ __global__ void camInit(Vec3 lookat, Vec3 lookfrom, Vec3 vup, float focusDist, f
 	*camera = new Camera(MAX_X, MAX_Y, fov, lookfrom, lookat, vup, aperture, focusDist);
 }
 
-__host__ void meshTestHost(Hittable** list, Hittable** world, int* allow, std::string fileName)
+__host__ void meshTestHost(Hittable** list, Hittable** world, int* allow, std::string fileName, curandState* randState)
 {
 	printMsg(LogLevel::info, "Loading texture...");
 	cv::Mat em;
@@ -324,7 +329,7 @@ __host__ void meshTestHost(Hittable** list, Hittable** world, int* allow, std::s
 		{
 			lowPolyDeer >> b >> c >> d;
 			v.push_back(Vec3(std::stof(b), std::stof(c), std::stof(d)));
-			printMsg(LogLevel::extra, "vertex: %f, %f, %f", std::stof(b), std::stof(c), std::stof(d));
+			//printMsg(LogLevel::extra, "vertex: %f, %f, %f", std::stof(b), std::stof(c), std::stof(d));
 		}
 		else if(a == "f")
 		{
@@ -332,14 +337,14 @@ __host__ void meshTestHost(Hittable** list, Hittable** world, int* allow, std::s
 			f.push_back(std::stoi(b));
 			f.push_back(std::stoi(c));
 			f.push_back(std::stoi(d));
-			printMsg(LogLevel::extra, "face: %d, %d, %d", std::stoi(b), std::stoi(c), std::stoi(d));
+			//printMsg(LogLevel::extra, "face: %d, %d, %d", std::stoi(b), std::stoi(c), std::stoi(d));
 		}
 		else
 		{
 			lowPolyDeer.ignore(100, '\n');
 		}
 	}
-	printMsg(LogLevel::info, "3D file parsed with %d faces and %d vertexs.", f.size()/3, v.size());
+	printMsg(LogLevel::debug, "3D file parsed with %d faces and %d vertexs.", f.size()/3, v.size());
 	int* fh = new int[f.size()], *faces;
 	Vec3* vh = new Vec3[v.size()], *vertexs;
 
@@ -356,8 +361,28 @@ __host__ void meshTestHost(Hittable** list, Hittable** world, int* allow, std::s
 		vh[i] = v[i];
 	}
 
+	printMsg(LogLevel::extra, "CPY1");
+
 	checkCudaErrors(cudaMemcpy(faces, fh, sizeof(int) * f.size(), cudaMemcpyHostToDevice));
 	checkCudaErrors(cudaMemcpy(vertexs, vh, sizeof(Vec3) * v.size(), cudaMemcpyHostToDevice));
 
-	meshTest <<<1, 1>>> (texture, em.cols, em.rows, faces, vertexs, f.size()/3, v.size(), list, world);
+	printMsg(LogLevel::extra, "CPY2");
+
+	meshTest <<<1, 1>>> (texture, em.cols, em.rows, faces, vertexs, f.size()/3, v.size(), list, world, randState);
+
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaDeviceSynchronize());
+
+	printMsg(LogLevel::extra, "mt fin");
+
+	delete[] fh;
+	delete[] vh;
+
+	checkCudaErrors(cudaFree(faces));
+	checkCudaErrors(cudaFree(vertexs));
+
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaDeviceSynchronize());
+
+	printMsg(LogLevel::extra, "fin");
 }

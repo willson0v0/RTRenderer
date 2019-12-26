@@ -62,6 +62,7 @@ __device__ Vec3 color(const Ray& r, Hittable** world, int depth, curandState* lo
 		Vec3 unit_direction = unitVector(r.direction);
 		float t = 0.5f * (unit_direction.e[1] + 1.0f);
 		Vec3 c = (1.0f - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
+		c /= 3;
 #endif
 		return c;
 	}
@@ -241,7 +242,7 @@ void LoopThread::kernel()
 	
 
 		// createRandScene <<<1, 1 >>> (cudaList, cudaWorld, cudaCam, t, em.cols, em.rows, worldGenRandState, tLookat, tLookfrom,tVup,tFocusDist,tAperture,tFov);
-		meshTestHost(cudaList, cudaWorld,allow, "lowpolydeer.obj");
+		meshTestHost(cudaList, cudaWorld,allow, "lowpolydeer.obj", worldGenRandState);
 		camInit <<<1, 1 >>> (tLookat, tLookfrom, tVup, tFocusDist, tAperture, tFov, this->cudaCam);
 		
 
@@ -315,6 +316,7 @@ void LoopThread::kernel()
 		checkCudaErrors(cudaFree((this->cudaCam)));
 		checkCudaErrors(cudaFree(worldGenRandState));
 		checkCudaErrors(cudaFree(renderRandomStates));
+		checkCudaErrors(cudaDeviceReset());
 	}
 	
 }
