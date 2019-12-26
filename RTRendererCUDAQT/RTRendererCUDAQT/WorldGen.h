@@ -284,9 +284,9 @@ __global__ void meshTest(unsigned char* texture, int tx, int ty, int* faces, Vec
 {
 	//list[0] = new TriangleMesh(faces, vertexs, nface, nvertex, new Metal(Vec3(0.8, 0.8, 0.8), 0.8), randState);
 	//list[0] = new TriangleMesh(faces, vertexs, nface, nvertex, new Lambertian(new ConstantTexture(0.8, 0.8, 0.8)), randState);
-	list[0] = new TriangleMesh(faces, vertexs, nface, nvertex, new Dielectric(Vec3(0.8, 0.8, 0.8), 1.5, 0), randState);
-	list[1] = new Sphere(Vec3(1200, 1200, -1200), 300, new DiffuseLight(new ConstantTexture(10, 10, 10)));
-	list[2] = new Sphere(Vec3(0, -300, -1), 290, new Lambertian(new ImageTexture(texture, tx, ty)));
+	list[0] = new TriangleMesh(faces, vertexs, nface, nvertex, new Dielectric(Vec3(1, 1, 1), 1.5, 0), randState);
+	list[1] = new Sphere(Vec3(100, 100, -100), 30, new DiffuseLight(new ConstantTexture(10, 10, 10)));
+	list[2] = new Sphere(Vec3(0, -100, -1), 95, new Lambertian(new ImageTexture(texture, tx, ty)));
 	//list[2] = new Sphere(Vec3(0, -300, -1), 200, new Lambertian(new ImageTexture(texture, tx, ty)));
 
 	*world = new HittableList(list, 3);
@@ -318,57 +318,24 @@ __host__ void meshTestHost(Hittable** list, Hittable** world, int* allow, std::s
 	checkCudaErrors(cudaMemcpy(texture, em.data, sizeof(unsigned char) * em.rows * em.cols * 3, cudaMemcpyHostToDevice));
 
 	printMsg(LogLevel::info, "Loading mesh...");
-	std::ifstream lowPolyDeer(fileName, std::ifstream::in);
-	std::vector<int> f;
-	std::vector<Vec3> v;
-	while (lowPolyDeer.good() && allow[0] == 1)
-	{
-		std::string a, b, c, d;
-		lowPolyDeer >> a;
-		if (a == "v")
-		{
-			lowPolyDeer >> b >> c >> d;
-			v.push_back(Vec3(std::stof(b), std::stof(c), std::stof(d)));
-			//printMsg(LogLevel::extra, "vertex: %f, %f, %f", std::stof(b), std::stof(c), std::stof(d));
-		}
-		else if(a == "f")
-		{
-			lowPolyDeer >> b >> c >> d;
-			f.push_back(std::stoi(b));
-			f.push_back(std::stoi(c));
-			f.push_back(std::stoi(d));
-			//printMsg(LogLevel::extra, "face: %d, %d, %d", std::stoi(b), std::stoi(c), std::stoi(d));
-		}
-		else
-		{
-			lowPolyDeer.ignore(100, '\n');
-		}
-	}
-	printMsg(LogLevel::debug, "3D file parsed with %d faces and %d vertexs.", f.size()/3, v.size());
-	int* fh = new int[f.size()], *faces;
-	Vec3* vh = new Vec3[v.size()], *vertexs;
 
-	checkCudaErrors(cudaMalloc((void**)&faces, sizeof(int) * f.size()));
-	checkCudaErrors(cudaMalloc((void**)&vertexs, sizeof(Vec3) * v.size()));
+	int* fh, *faces, nFace, nVertex;
+	Vec3* vh, *vertexs;
 
-	for (int i = 0; i < f.size(); i++)
-	{
-		fh[i] = f[i]-1;
-	}
+	readObjFile(fileName, fh, vh, nFace, nVertex);
 
-	for (int i = 0; i < v.size(); i++)
-	{
-		vh[i] = v[i];
-	}
+	printMsg(LogLevel::debug, "3D file parsed with %d faces and %d vertexs.", nFace, nVertex);
 
-	printMsg(LogLevel::extra, "CPY1");
+	checkCudaErrors(cudaMalloc((void**)&faces, sizeof(int) * nFace * 3));
+	checkCudaErrors(cudaMalloc((void**)&vertexs, sizeof(Vec3) * nVertex));
+	checkCudaErrors(cudaMemcpy(faces, fh, sizeof(int) * nFace * 3, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(vertexs, vh, sizeof(Vec3) * nVertex, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaDeviceSynchronize());
 
-	checkCudaErrors(cudaMemcpy(faces, fh, sizeof(int) * f.size(), cudaMemcpyHostToDevice));
-	checkCudaErrors(cudaMemcpy(vertexs, vh, sizeof(Vec3) * v.size(), cudaMemcpyHostToDevice));
+	printMsg(LogLevel::extra, "CPY 2 GPU fin");
 
-	printMsg(LogLevel::extra, "CPY2");
-
-	meshTest <<<1, 1>>> (texture, em.cols, em.rows, faces, vertexs, f.size()/3, v.size(), list, world, randState);
+	meshTest <<<1, 1>>> (texture, em.cols, em.rows, faces, vertexs, nFace, nVertex, list, world, randState);
 
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
@@ -378,11 +345,63 @@ __host__ void meshTestHost(Hittable** list, Hittable** world, int* allow, std::s
 	delete[] fh;
 	delete[] vh;
 
-	checkCudaErrors(cudaFree(faces));
-	checkCudaErrors(cudaFree(vertexs));
-
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
 
 	printMsg(LogLevel::extra, "fin");
+}
+
+__global__ void finalSetKer(unsigned char* texture, int tx, int ty, int* faces, Vec3* vertexs, int nface, int nvertex, Hittable** list, Hittable** world, curandState* randState)
+{
+	list[0] = new TriangleMesh(faces, vertexs, nface, nvertex, new Dielectric(Vec3(1, 1, 1), 1.5, 0), randState);
+	list[1] = new Sphere(Vec3(-30, 30, -30), 20, new DiffuseLight(new ConstantTexture(10, 10, 10)));
+	list[2] = new RectXZ(-50, 50, -50, 50, -5, new Lambertian(new ImageTexture(texture, tx, ty)));
+
+	*world = new HittableList(list, 3);
+
+	//((HittableList*)(*world))->remove(2);
+}
+
+__host__ void finalSet(Hittable** list, Hittable** world, int* allow, curandState* randState)
+{
+	printMsg(LogLevel::info, "Loading texture...");
+	cv::Mat em;
+	unsigned char* texture;
+	em = cv::imread("wood.jpg");
+	if (em.rows < 1 || em.cols < 1)
+	{
+		printMsg(LogLevel::error, "Failed to find Earth texture(earthmap.jpg).");
+	}
+	else
+	{
+		printMsg(LogLevel::debug, "Texture loaded.");
+	}
+
+	checkCudaErrors(cudaMalloc((void**)&texture, sizeof(unsigned char) * em.rows * em.cols * 3));
+	checkCudaErrors(cudaMemcpy(texture, em.data, sizeof(unsigned char) * em.rows * em.cols * 3, cudaMemcpyHostToDevice));
+
+	printMsg(LogLevel::info, "Loading mesh...");
+
+	int* fh, * faces, nFace, nVertex;
+	Vec3* vh, * vertexs;
+
+	readObjFile("wineglass.obj", fh, vh, nFace, nVertex);
+
+	printMsg(LogLevel::debug, "3D file parsed with %d faces and %d vertexs.", nFace, nVertex);
+
+	checkCudaErrors(cudaMalloc((void**)&faces, sizeof(int) * nFace * 3));
+	checkCudaErrors(cudaMalloc((void**)&vertexs, sizeof(Vec3) * nVertex));
+	checkCudaErrors(cudaMemcpy(faces, fh, sizeof(int) * nFace * 3, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(vertexs, vh, sizeof(Vec3) * nVertex, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaDeviceSynchronize());
+
+	finalSetKer <<<1, 1 >>> (texture, em.cols, em.rows, faces, vertexs, nFace, nVertex, list, world, randState);
+
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaDeviceSynchronize());
+
+	delete[] fh;
+	delete[] vh;
+
 }

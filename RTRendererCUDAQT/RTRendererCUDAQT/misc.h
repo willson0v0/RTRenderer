@@ -11,7 +11,9 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <Windows.h>
+#include <fstream>
 #include <string>
+#include <sstream>
 #include "Vec3.h"
 
 std::string str;
@@ -236,3 +238,70 @@ __device__ __host__ float clip(float upperBound, float loweBound, float in)
 {
 	return in > upperBound ? upperBound : (in < loweBound ? loweBound : in);
 }
+
+__host__ void readObjFile(std::string name, int*& faces, Vec3*& vertexes, int& nface, int& nVertex)
+{
+	printMsg(LogLevel::info, "Loading mesh from \"%s\"...", name.c_str());
+
+	std::ifstream objFile(name, std::ifstream::in);
+	std::vector<int> f;
+	std::vector<Vec3> v;
+
+	while (objFile.good())
+	{
+		std::string a;
+		objFile >> a;
+		if (a == "v")
+		{
+			std::string b, c, d;
+			objFile >> b >> c >> d;
+			v.push_back(Vec3(std::stof(b), std::stof(c), std::stof(d)));
+		}
+		else if (a == "f")
+		{
+			std::string b, c;
+			std::vector<int> polygon;
+			getline(objFile, b);
+			std::stringstream sstr(b);
+
+			while (sstr >> c)
+			{
+				polygon.push_back(std::stoi(c)-1);
+			}
+
+			if (polygon.size() == 3)
+			{
+				f.push_back(polygon[0]);
+				f.push_back(polygon[1]);
+				f.push_back(polygon[2]);
+			}
+			else
+			{
+				for (int i = 1; i < polygon.size()-1; i++)
+				{
+					f.push_back(polygon[0]);
+					f.push_back(polygon[i]);
+					f.push_back(polygon[i+1]);
+				}
+			}
+		}
+		else
+		{
+			objFile.ignore(100, '\n');
+		}
+	}
+
+	faces = new int[f.size()];
+	vertexes = new Vec3[v.size()];
+
+	std::copy(f.begin(), f.end(), faces);
+	std::copy(v.begin(), v.end(), vertexes);
+
+	nface = f.size()/3;
+	nVertex = v.size();
+}
+/*
+__host__ bool readTextureFile(std::string name, unsigned char*& pixels, int& rows, int& cols)
+{
+
+}*/

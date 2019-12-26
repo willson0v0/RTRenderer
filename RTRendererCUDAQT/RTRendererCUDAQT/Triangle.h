@@ -15,10 +15,7 @@ public:
 
 		__device__ Triangle(int* vi, int indexInMesh, TriangleMesh* m):mesh(m)
 		{
-			vertexIndex = new int[3];
-			vertexIndex[0] = vi[0];
-			vertexIndex[1] = vi[1];
-			vertexIndex[2] = vi[2];
+			vertexIndex = vi;
 			index = indexInMesh;
 		}
 
@@ -97,17 +94,19 @@ public:
 	__device__ TriangleMesh(int* triVerList, Vec3* vr, int nt, int nv, Material* m, curandState* localRandState)
 		:nTriangles(nt), nVertex(nv), matPtr(m)
 	{
+		printMsg(LogLevel::extra, "Start making Vertexs");
+		vertex = vr;
+		printMsg(LogLevel::extra, "Start making triangle");
 		triangles = new Hittable * [nTriangles];
 		for (int i = 0; i < nTriangles; i++)
 		{
 			triangles[i] = new Triangle(&triVerList[i * 3], i, this);
+			if (!(i % 1000))
+			{
+				printMsg(LogLevel::extra, "current %d triangles", i);
+			}
 		}
 
-		vertex = new Vec3[nVertex];
-		for (int i = 0; i < nVertex; i++)
-		{
-			vertex[i] = vr[i];
-		}
 #ifdef USE_BVH
 		bvh = new BVH(triangles, nTriangles, localRandState);
 #endif

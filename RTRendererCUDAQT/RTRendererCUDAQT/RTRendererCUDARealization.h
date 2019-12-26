@@ -150,7 +150,7 @@ void RTRendererCUDAQT::initialization()
 	this->looper->targetSPP = INT_MAX;//默认是最大值，不依靠它提供break
 
 	this->looper->Lookat = new Vec3(0, 0, 0);
-	this->looper->Lookfrom = new Vec3(100, 100, 200);
+	this->looper->Lookfrom = new Vec3(10, 5, 10);
 	this->looper->Vup = new Vec3(0, 1, 0);
 
 	this->looper->FocusDist = (*this->looper->Lookat - *this->looper->Lookfrom).length();

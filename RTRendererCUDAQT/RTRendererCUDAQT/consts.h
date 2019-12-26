@@ -7,7 +7,7 @@
 #define ALLOWOUTOFBOUND
 #define ALLOWOVERFLOW
 //#define USE_BVH
-//#define DARKSCENE
+#define DARKSCENE
 
 enum class LogLevel
 {
