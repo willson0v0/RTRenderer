@@ -239,7 +239,7 @@ __device__ __host__ float clip(float upperBound, float loweBound, float in)
 	return in > upperBound ? upperBound : (in < loweBound ? loweBound : in);
 }
 
-__host__ void readObjFile(std::string name, int*& faces, Vec3*& vertexes, int& nface, int& nVertex)
+__host__ void readObjFile(std::string name, int*& faces, Vec3*& vertexes, int& nface, int& nVertex, float scale)
 {
 	printMsg(LogLevel::info, "Loading mesh from \"%s\"...", name.c_str());
 
@@ -255,7 +255,7 @@ __host__ void readObjFile(std::string name, int*& faces, Vec3*& vertexes, int& n
 		{
 			std::string b, c, d;
 			objFile >> b >> c >> d;
-			v.push_back(Vec3(std::stof(b), std::stof(c), std::stof(d)));
+			v.push_back(Vec3(std::stof(b)*scale, std::stof(c)*scale, std::stof(d)*scale));
 		}
 		else if (a == "f")
 		{

@@ -72,7 +72,7 @@ __global__ void createCheckerTest(Hittable** list, Hittable** world, Camera** ca
 
 #undef RND
 #define RND (curand_uniform(randState))
-__global__ void createRandScene(Hittable** list, Hittable** world, Camera** camera, unsigned char* texture, int tx, int ty, curandState* randState,
+__global__ void createRandScene(Hittable** list, Hittable** world, Camera** camera, unsigned char* texture, int tx, int ty, unsigned char* texture2, int tx2, int ty2, int* faces, Vec3* vertexs, int nface, int nvertex, curandState* randState,
 	Vec3 lookat, Vec3 lookfrom, Vec3 vup, float focusDist, float aperture, float fov)
 {
 	printMsg(LogLevel::info, "Using scene: Random balls.");
@@ -84,20 +84,24 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 	printMsg(LogLevel::debug, "Noise Generation complete.");
 
 	int i = 0;
-	list[i++] = new Sphere(Vec3(0, -10000.0, -1), 10000, new Lambertian(
+	/*list[i++] = new Sphere(Vec3(0, -10000.0, -1), 10000, new Lambertian(
 			new CheckerTexture(
 			new ConstantTexture(Vec3(0.5, 0.5, 0.5)), 
 			new ConstantTexture(Vec3(0.9, 0.9, 0.9))
 		)
-	));
+	));*/
+	list[i++] = new RectXZ(-25, 25, -25, 25, 0, new Lambertian(new ImageTexture(texture, tx, ty)));
 	list[i++] = new Sphere(Vec3(4, 1, 0), 1.0, new Dielectric(Vec3(1, 1, 1), 1.5, 0));
 	list[i++] = new FlipNorm(new Sphere(Vec3(4, 1, 0), 0.75, new Dielectric(Vec3(1, 1, 1), 1.5, 0)));
-	list[i++] = new Sphere(Vec3(4, 1, 0), 0.5, new Lambertian(new ImageTexture(texture, tx, ty)));
+	list[i++] = new Sphere(Vec3(4, 1, 0), 0.5, new Lambertian(new ImageTexture(texture2, tx2, ty2)));
 	list[i++] = new Sphere(Vec3(0, 1, 0), 1.0, new Lambertian(new NoiseTexture(4)));
 	list[i++] = new Sphere(Vec3(-4, 1, 0), 1.0, new Metal(Vec3(0.7, 0.6, 0.5), 0.0));
 
 	list[i++] = new Sphere(Vec3(-5, 3, 2), 1, new DiffuseLight(new ConstantTexture(Vec3(10, 5, 10))));
 	list[i++] = new RectXY(3, 5, 1, 3, -3, new DiffuseLight(new ConstantTexture(Vec3(5, 10, 5))));
+
+	list[i++] = new TriangleMesh(faces, vertexs, nface, nvertex, new Lambertian(new ConstantTexture(0.8, 0.8, 0.8)), randState);
+	list[i - 1] = new Translate(list[i - 1], Vec3(0, 0, 5));
 	
 	for (int a = -11; a < 11; a++) {
 		for (int b = -11; b < 11; b++) {
@@ -147,6 +151,76 @@ __global__ void createRandScene(Hittable** list, Hittable** world, Camera** came
 	fov = 30.0;
 
 	*camera = new Camera(MAX_X, MAX_Y, fov, lookfrom, lookat, vup , aperture, focusDist);
+}
+
+void crs(Hittable** list, Hittable** world, Camera** camera, curandState* randState,
+	Vec3 lookat, Vec3 lookfrom, Vec3 vup, float focusDist, float aperture, float fov)
+{
+	printMsg(LogLevel::info, "Loading texture...");
+	cv::Mat em;
+	unsigned char* texture;
+	em = cv::imread("wood.jpg");
+	if (em.rows < 1 || em.cols < 1)
+	{
+		printMsg(LogLevel::error, "Failed to find wood texture(wood.jpg).");
+	}
+	else
+	{
+		printMsg(LogLevel::debug, "Texture1 loaded.");
+	}
+
+	checkCudaErrors(cudaMalloc((void**)&texture, sizeof(unsigned char) * em.rows * em.cols * 3));
+	checkCudaErrors(cudaMemcpy(texture, em.data, sizeof(unsigned char) * em.rows * em.cols * 3, cudaMemcpyHostToDevice));
+
+
+	cv::Mat em2;
+	unsigned char* texture2;
+	em2 = cv::imread("earthmap.jpg");
+	if (em2.rows < 1 || em2.cols < 1)
+	{
+		printMsg(LogLevel::error, "Failed to find Earth texture(earthmap.jpg).");
+	}
+	else
+	{
+		printMsg(LogLevel::debug, "Texture2 loaded.");
+	}
+
+	checkCudaErrors(cudaMalloc((void**)&texture2, sizeof(unsigned char) * em2.rows * em2.cols * 3));
+	checkCudaErrors(cudaMemcpy(texture2, em2.data, sizeof(unsigned char) * em2.rows * em2.cols * 3, cudaMemcpyHostToDevice));
+
+
+	printMsg(LogLevel::info, "Loading mesh...");
+
+	int* fh, * faces, nFace, nVertex;
+	Vec3* vh, * vertexs;
+
+	readObjFile("lowpolydeer.obj", fh, vh, nFace, nVertex, 0.002);
+
+	printMsg(LogLevel::debug, "3D file parsed with %d faces and %d vertexs.", nFace, nVertex);
+
+	checkCudaErrors(cudaMalloc((void**)&faces, sizeof(int) * nFace * 3));
+	checkCudaErrors(cudaMalloc((void**)&vertexs, sizeof(Vec3) * nVertex));
+	checkCudaErrors(cudaMemcpy(faces, fh, sizeof(int) * nFace * 3, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(vertexs, vh, sizeof(Vec3) * nVertex, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaDeviceSynchronize());
+
+	printMsg(LogLevel::extra, "CPY 2 GPU fin");
+
+	createRandScene <<<1, 1 >>> (list, world, camera, texture, em.cols, em.rows, texture2, em2.cols, em2.rows, faces, vertexs, nFace, nVertex, randState, lookat, lookfrom, vup, focusDist, aperture, fov);
+
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaDeviceSynchronize());
+
+	printMsg(LogLevel::extra, "mt fin");
+
+	delete[] fh;
+	delete[] vh;
+
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaDeviceSynchronize());
+
+	printMsg(LogLevel::extra, "fin");
 }
 
 __global__ void createCornellBox(Hittable** list, Hittable** world, Camera** camera, curandState* randState)
@@ -322,7 +396,7 @@ __host__ void meshTestHost(Hittable** list, Hittable** world, int* allow, std::s
 	int* fh, *faces, nFace, nVertex;
 	Vec3* vh, *vertexs;
 
-	readObjFile(fileName, fh, vh, nFace, nVertex);
+	readObjFile(fileName, fh, vh, nFace, nVertex, 1);
 
 	printMsg(LogLevel::debug, "3D file parsed with %d faces and %d vertexs.", nFace, nVertex);
 
@@ -385,7 +459,7 @@ __host__ void finalSet(Hittable** list, Hittable** world, int* allow, curandStat
 	int* fh, * faces, nFace, nVertex;
 	Vec3* vh, * vertexs;
 
-	readObjFile("wineglass.obj", fh, vh, nFace, nVertex);
+	readObjFile("wineglass.obj", fh, vh, nFace, nVertex, 1);
 
 	printMsg(LogLevel::debug, "3D file parsed with %d faces and %d vertexs.", nFace, nVertex);
 
